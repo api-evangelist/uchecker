@@ -1,0 +1,83 @@
+generated: '2026-08-16'
+method: searched
+source: >-
+  https://api.uchecker.net/docs (Scalar API Reference console, verified in the served HTML),
+  https://api.uchecker.net/docs/openapi.json, https://uchecker.net/en#tariffs
+name: uChecker sandbox and console
+sandbox_mode:
+  present: false
+  note: >-
+    uChecker publishes NO test/sandbox mode. There is no test-vs-live key prefix pair (the
+    single documented key prefix is `uk_`), no test mailbox fixtures, no test clock, and no
+    trigger tooling. Every call runs against production and debits real credits. This is not
+    a gap in our search — the contract and the site describe one environment only.
+key_prefixes:
+  - prefix: uk_
+    mode: live
+    note: The only documented prefix. There is no `uk_test_` counterpart.
+test_values: []
+test_values_note: >-
+  No published test addresses, no guaranteed-good / guaranteed-bad fixture mailboxes. Do NOT
+  invent any — an arbitrary address sent to this API is a real SMTP probe against a real
+  mail server.
+time_simulation:
+  present: false
+
+console:
+  present: true
+  url: https://api.uchecker.net/docs
+  implementation: Scalar API Reference v1.51.0
+  interactive: true
+  auth: >-
+    Interactive requests are sent with your own live API key; the console is configured with
+    persistAuth, so the key is stored in the browser. Anything executed here spends real
+    credits.
+  evidence: >-
+    The served HTML carries <script id="api-reference" data-url="/docs/openapi.json"
+    data-configuration='{"theme":"default","metaData":{"title":"UChecker API"},"authentication":{"persistAuth":true}}'
+    src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.51.0">, with a
+    JavaScript-disabled fallback link to the raw spec.
+  caveat: >-
+    The console is client-side rendered. With JavaScript disabled the page degrades to a
+    "JavaScript is required" notice and a link to /docs/openapi.json — which is why contract
+    discovery must go to the spec URL directly rather than scraping the docs page.
+
+free_allowance:
+  present: true
+  quota: first 100 addresses free
+  requires_signup: true
+  requires_card: false
+  signup: https://app.uchecker.net
+  alternate_signup: https://t.me/uchecker_bot
+  note: >-
+    The free allowance is the practical substitute for a sandbox — real checks against real
+    mail servers, capped at 100 addresses. It is a free TIER, not a test ENVIRONMENT: results
+    are production results and the credits are real.
+
+unauthenticated_surface:
+  present: true
+  note: >-
+    uChecker's free DNS/email diagnostic tools need no account and no key. They are web
+    tools, not API endpoints, but they are the only way to exercise the underlying checks
+    without registering.
+  urls:
+    - https://uchecker.net/tools
+    - https://uchecker.net/instrumenty
+  tools:
+    - email domain health check
+    - email header analyzer
+    - email blacklist check (17 lists)
+    - SMTP server test
+    - SPF checker / validator / generator
+    - DKIM checker / key generator
+    - DMARC checker / generator
+    - MX lookup
+    - BIMI generator
+    - MTA-STS generator
+    - TLS-RPT generator
+
+gaps_for_the_provider:
+  - >-
+    Ship a test mode with a `uk_test_` key prefix and deterministic fixture addresses
+    (always-good, always-bad, catch-all, disposable, role-based, timeout) so integrators can
+    build and CI-test without spending credits or probing strangers' mail servers.

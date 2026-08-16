@@ -1,0 +1,96 @@
+generated: '2026-08-16'
+method: searched
+source: >-
+  https://api.uchecker.net/docs/openapi.json, https://uchecker.net/en,
+  https://uchecker.net/sitemap.xml, plus live probes of status/changelog paths
+name: uChecker lifecycle
+versioning:
+  scheme: URI path
+  current_version: v1
+  prefix: /api/v1
+  spec_version: 1.0.0
+  policy_published: false
+  note: >-
+    A version is present in the path but no versioning POLICY is published — nothing states
+    how long v1 is supported, how a v2 would be introduced, or whether breaking changes can
+    land inside v1. The /auth/* endpoints carry no version prefix at all.
+
+deprecation:
+  policy_published: false
+  policy_url: null
+  sunset_header: false
+  deprecation_header: false
+  rfc8594: false
+  deprecated_operations: []
+  note: >-
+    No deprecation policy, no RFC 8594 Sunset/Deprecation headers documented, and no
+    operation in the 33-operation OpenAPI carries `deprecated: true`. NO `Deprecation`
+    pointer is emitted — this file records the absence.
+
+status_page:
+  present: false
+  url: null
+  probes:
+    - url: https://status.uchecker.net
+      status: 0
+      note: DNS does not resolve
+    - url: https://uchecker.net/status
+      status: 404
+  note: >-
+    uChecker publishes no status page or uptime history. NO `StatusPage` pointer is
+    emitted.
+
+changelog:
+  present: false
+  url: null
+  probes:
+    - url: https://uchecker.net/changelog
+      status: 404
+  note: >-
+    No dated changelog or release notes anywhere on uchecker.net or api.uchecker.net; the
+    569-URL sitemap contains no changelog or release page. The OpenAPI's info.version has
+    sat at 1.0.0. NO `ChangeLog` pointer is emitted.
+
+sla:
+  published: false
+  note: >-
+    No uptime or latency SLA is published. The marketing page quotes a throughput figure —
+    approximately 3,200 addresses per minute — which is a performance claim, not a
+    commitment.
+
+roadmap:
+  present: false
+  url: null
+
+support:
+  email: support@uchecker.net
+  telegram: https://t.me/goodsam911
+  bot: https://t.me/uchecker_bot
+  note: >-
+    Support is email plus Telegram. There is no ticketing portal, community forum, or
+    status/incident channel.
+
+resource_lifecycle:
+  name: validation task
+  states:
+    - state: pending
+      code: 0
+    - state: processing
+      code: 1
+    - state: completed
+      code: 3
+    - state: failed
+      code: -1
+  transitions: pending -> processing -> completed | failed
+  note: >-
+    The published state table skips code 2. Results and analytics for a completed task
+    remain retrievable from the dashboard "whenever you need them" per the marketing copy,
+    but no retention period is stated in the contract or the terms, so an integrator cannot
+    tell how long results survive.
+
+company:
+  legal_name: ООО «Ю СОФТ ДЕВЕЛОПМЕНТ»
+  ogrn: '1156196001741'
+  inn: '6164013722'
+  address: 344029, Ростовская область, г. Ростов-на-Дону, ул. Алексея Береста, д. 6
+  source: https://uchecker.net/en/mcp (site footer)

@@ -1,0 +1,146 @@
+generated: '2026-08-16'
+method: probed
+source: live HTTP probes, 2026-08-16
+name: uChecker
+summary:
+  hosts_probed: 3
+  paths_probed: 24
+  real_documents_found: 0
+note: >-
+  Every /.well-known/ path 404s on the two hosts that serve real content
+  (api.uchecker.net returns a text/plain 404; uchecker.net returns the Next.js HTML 404
+  page). app.uchecker.net answers HTTP 200 with the same 641-byte HTML SPA shell for
+  EVERY path probed — including paths that cannot exist — so those 200s are a catch-all,
+  not documents, and are recorded as misses. NO WellKnown or SecurityTxt pointer is
+  emitted: this file documents an absence.
+probes:
+  - host: https://api.uchecker.net
+    results:
+      - path: /.well-known/security.txt
+        status: 404
+        content_type: text/plain
+        file: null
+      - path: /.well-known/openid-configuration
+        status: 404
+        content_type: text/plain
+        file: null
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+        content_type: text/plain
+        file: null
+      - path: /.well-known/oauth-protected-resource
+        status: 404
+        content_type: text/plain
+        file: null
+      - path: /.well-known/api-catalog
+        status: 404
+        content_type: text/plain
+        file: null
+      - path: /.well-known/ai-plugin.json
+        status: 404
+        content_type: text/plain
+        file: null
+      - path: /.well-known/agent-card.json
+        status: 404
+        content_type: text/plain
+        file: null
+      - path: /.well-known/agent.json
+        status: 404
+        content_type: text/plain
+        file: null
+  - host: https://uchecker.net
+    results:
+      - path: /.well-known/security.txt
+        status: 404
+        content_type: text/html
+        file: null
+      - path: /.well-known/openid-configuration
+        status: 404
+        content_type: text/html
+        file: null
+      - path: /.well-known/oauth-authorization-server
+        status: 404
+        content_type: text/html
+        file: null
+      - path: /.well-known/oauth-protected-resource
+        status: 404
+        content_type: text/html
+        file: null
+      - path: /.well-known/api-catalog
+        status: 404
+        content_type: text/html
+        file: null
+      - path: /.well-known/ai-plugin.json
+        status: 404
+        content_type: text/html
+        file: null
+      - path: /.well-known/agent-card.json
+        status: 404
+        content_type: text/html
+        file: null
+      - path: /.well-known/agent.json
+        status: 404
+        content_type: text/html
+        file: null
+  - host: https://app.uchecker.net
+    spa_catch_all: true
+    results:
+      - path: /.well-known/security.txt
+        status: 200
+        content_type: text/html
+        file: null
+        verdict: miss — 641-byte SPA shell, not a document
+      - path: /.well-known/openid-configuration
+        status: 200
+        content_type: text/html
+        file: null
+        verdict: miss — 641-byte SPA shell, not a document
+      - path: /.well-known/oauth-authorization-server
+        status: 200
+        content_type: text/html
+        file: null
+        verdict: miss — 641-byte SPA shell, not a document
+      - path: /.well-known/oauth-protected-resource
+        status: 200
+        content_type: text/html
+        file: null
+        verdict: miss — 641-byte SPA shell, not a document
+      - path: /.well-known/api-catalog
+        status: 200
+        content_type: text/html
+        file: null
+        verdict: miss — 641-byte SPA shell, not a document
+      - path: /.well-known/ai-plugin.json
+        status: 200
+        content_type: text/html
+        file: null
+        verdict: miss — 641-byte SPA shell, not a document
+      - path: /.well-known/agent-card.json
+        status: 200
+        content_type: text/html
+        file: null
+        verdict: miss — 641-byte SPA shell, not a document
+      - path: /.well-known/agent.json
+        status: 200
+        content_type: text/html
+        file: null
+        verdict: miss — 641-byte SPA shell, not a document
+adjacent_discovery:
+  - path: /llms.txt
+    host: https://uchecker.net
+    status: 200
+    content_type: text/plain
+    note: >-
+      Real llms.txt, 140,498 bytes, saved verbatim to llms/uchecker-llms.txt. Not a
+      /.well-known/ path, recorded here because it is the one machine-readable
+      discovery document uChecker actually serves.
+  - path: /docs/openapi.json
+    host: https://api.uchecker.net
+    status: 200
+    content_type: application/json
+    note: OpenAPI 3.0.0, 33 operations — the contract, captured in openapi/_original/.
+  - path: /apis.json
+    host: https://api.uchecker.net
+    status: 404
+    note: >-
+      Referenced by the original apis.io submission note; it does not resolve today.

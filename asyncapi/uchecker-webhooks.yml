@@ -1,0 +1,91 @@
+generated: '2026-08-16'
+method: derived
+source: >-
+  openapi/_original/uchecker-openapi.json — SingleValidationDto.webhook_url,
+  BulkValidationDto.webhook_url and websocket_id; info.description task-lifecycle section
+docs: https://api.uchecker.net/docs
+name: uChecker event surface
+asyncapi_published: false
+asyncapi_probe:
+  - url: https://api.uchecker.net/asyncapi.yaml
+    note: not served — api.uchecker.net returns text/plain 404 for unknown paths
+  - url: https://api.uchecker.net/asyncapi.json
+    note: not served
+note: >-
+  uChecker ships NO AsyncAPI document. It does document a real push surface — a
+  caller-supplied webhook URL invoked on task completion, plus a WebSocket progress channel
+  used by its own dashboard — so this artifact captures the webhook catalog and the
+  apis.yml pointer emitted is `Webhooks`, not `AsyncAPI`. Nothing here is fabricated: the
+  payload shape is deliberately left unspecified because the provider does not publish it.
+
+delivery:
+  style: caller-registered callback URL, per task
+  registration: >-
+    Set `webhook_url` in the request body of POST /api/v1/validate/single or
+    POST /api/v1/validate/bulk. There is no webhook management API, no endpoint registry,
+    and no per-account default — the URL is supplied on every submission.
+  transport: HTTPS POST
+  expected_response: HTTP 200
+  reachability_requirement: >-
+    "URL должен быть доступен извне и возвращать HTTP 200" — the URL must be publicly
+    reachable and must answer 200.
+  retries: not documented
+  timeout: not documented
+  ordering: not documented
+  signing:
+    supported: false
+    note: >-
+      No HMAC signature, no shared secret, no timestamp header and no source IP range are
+      documented. A receiver has no published way to verify that a callback came from
+      uChecker, which means the callback URL itself is the only secret. Treat it as a
+      bearer capability and verify results out-of-band via GET /api/v1/tasks/{taskId}.
+
+event_count: 1
+events:
+  - name: validation.task.completed
+    naming: derived label — uChecker does not name or type its callback
+    trigger: >-
+      A validation task finishes. For POST /validate/single the callback fires when the
+      single address has been checked; for POST /validate/bulk when the whole task
+      completes.
+    payload: >-
+      "POST-запрос с результатами всех проверок" — the results of all checks. The precise
+      body schema is NOT published; there is no component schema for the callback payload
+      and no `webhooks:` or `callbacks:` block in the OpenAPI 3.0 document. Expect the
+      task's results, but confirm against a live delivery before depending on field names.
+    payload_schema: unpublished
+    related_pull_operations:
+      - ValidationController_getTask
+      - ValidationController_getTaskResults
+      - ValidationController_getTaskAnalytics
+    failure_event: >-
+      Whether a task that ends in the `failed` state (-1) also fires the callback is not
+      documented.
+
+streaming:
+  - name: task progress
+    transport: websocket
+    registration_field: websocket_id (BulkValidationDto)
+    documented: false
+    note: >-
+      `websocket_id` is described as "WebSocket ID для получения обновлений в реальном
+      времени. Используется веб-интерфейсом для отображения прогресса без polling" — used by
+      the web interface to show progress without polling. The WebSocket URL, handshake,
+      message schema and auth are NOT published, so this channel is effectively internal.
+      Recorded because it exists in the public contract, not because a third party can use it.
+
+polling_fallback:
+  operation: ValidationController_getTask
+  path: GET /api/v1/tasks/{taskId}
+  recommended_interval: 5-10 seconds
+  progress_field: progress_percent
+  note: >-
+    The provider recommends polling as the default and the webhook as the alternative
+    ("Или укажите `webhook_url`…"). For agents, uChecker's own MCP guidance is to run
+    validation as a background task rather than a synchronous step.
+
+gaps_for_the_provider:
+  - Publish the callback payload schema (an OpenAPI 3.1 `webhooks:` block, or an AsyncAPI 3.0 document).
+  - Sign callbacks (HMAC over the body with a per-account secret) so receivers can verify origin.
+  - Document retry and timeout behaviour, and whether `failed` tasks fire a callback.
+  - Document the WebSocket channel, or drop websocket_id from the public contract.

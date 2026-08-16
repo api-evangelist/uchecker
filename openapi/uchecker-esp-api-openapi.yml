@@ -1,0 +1,246 @@
+openapi: 3.2.0
+info:
+  title: UChecker ESP Провайдеры API
+  description: "\n## О сервисе\n\nUChecker — платформа валидации email-адресов для маркетологов, ESP-провайдеров и разработчиков. Проверяйте email поштучно или массово — до миллионов адресов за одну задачу. API определяет существование почтового ящика на уровне SMTP, DNS/MX и провайдера, возвращая однозначный результат: `good` или `bad`.\n\nБазовый URL: `https://api.uchecker.net`\n\n---\n\n## Быстрый старт\n\n**Шаг 1.** Получите API ключ — он доступен в [личном кабинете](https://app.uchecker.net) сразу после регистрации.\n\n**Шаг 2.** Отправьте запрос на валидацию:\n```bash\ncurl -X POST https://api.uchecker.net/api/v1/validate/single \\\n  -H \"x-api-key: ваш_ключ\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\": \"user@example.com\"}'\n```\n\n**Шаг 3.** Получите результат по `task_id` из ответа:\n```bash\ncurl https://api.uchecker.net/api/v1/tasks/123/results \\\n  -H \"x-api-key: ваш_ключ\"\n```\n\n---\n\n## Аутентификация\n\nAPI поддерживает два равноценных способа аутентификации. Используйте любой из них — оба дают полный доступ ко всем эндпоинтам.\n\n### API Key (рекомендуется для интеграций)\n\nПередайте ключ в заголовке `x-api-key`. Ключ не истекает и действует до ручного сброса.\n\n```\nx-api-key: uk_xxxxxxxxxxxxx\n```\n\n### Bearer Token (рекомендуется для фронтенд-приложений)\n\nПолучите JWT через `POST /auth/login`, передайте в заголовке `Authorization`.\n\n```\nAuthorization: Bearer eyJhbGciOiJIUzI1NiIs...\n```\n\n| Токен | Время жизни | Назначение |\n|-------|-------------|------------|\n| access_token | 1 час | Аутентификация запросов |\n| refresh_token | 7 дней | Обновление access_token через `POST /auth/refresh` |\n\n> **Совет:** при серверной интеграции используйте API Key — это проще и не требует управления токенами.\n\n---\n\n## Лимиты и тарификация\n\nUChecker работает по кредитной модели. Каждая проверка одного email-адреса списывает **1 кредит** с вашего баланса.\n\n- **Rate limits отсутствуют** — вы можете отправлять запросы с любой частотой.\n- Кредиты списываются в момент постановки email в очередь.\n- Email с невалидным синтаксисом (при массовой отправке) **не тарифицируются** и возвращаются в поле `invalid_details`.\n- Текущий баланс доступен через `GET /api/v1/account/balance`.\n\n---\n\n## Результаты валидации\n\nКаждый email получает одно из двух значений `validation_result`:\n\n| Результат | Описание |\n|-----------|----------|\n| `good` | Почтовый ящик существует и принимает почту. Адрес безопасен для рассылки. |\n| `bad` | Почтовый ящик не существует, отключён, или домен не принимает почту. |\n\nДля адресов со статусом `bad` в поле `result` указывается детальная причина: `mailbox_not_found`, `domain_not_found`, `smtp_rejected` и другие.\n\n---\n\n## Жизненный цикл задачи\n\nКаждый запрос на валидацию создаёт задачу (task), которая проходит через состояния:\n\n```\npending → processing → completed\n                    ↘ failed\n```\n\n| Состояние | Код | Описание |\n|-----------|-----|----------|\n| `pending` | 0 | Задача создана, ожидает начала обработки |\n| `processing` | 1 | Email-адреса проверяются. Прогресс доступен в поле `progress_percent` |\n| `completed` | 3 | Все адреса проверены. Результаты доступны для скачивания |\n| `failed` | -1 | Произошла ошибка. Обратитесь в поддержку с `task_id` |\n\n**Рекомендуемый polling-интервал:** каждые 5–10 секунд через `GET /api/v1/tasks/:taskId`. Или укажите `webhook_url` при создании задачи — мы отправим POST-запрос с результатами, когда задача завершится.\n\n---\n\n## Обработка ошибок\n\nAPI возвращает стандартные HTTP-коды и JSON-ответы:\n\n| Код | Значение | Когда возникает |\n|-----|----------|-----------------|\n| 200 | Успех | Запрос выполнен |\n| 400 | Ошибка запроса | Невалидные параметры, неверный формат данных |\n| 401 | Не авторизован | Отсутствует или неверный API ключ / JWT токен |\n| 403 | Доступ запрещён | Недостаточно кредитов на балансе |\n| 404 | Не найдено | Задача не существует или не принадлежит вашему аккаунту |\n| 500 | Внутренняя ошибка | Ошибка сервера — повторите запрос позже |\n\nТело ошибки всегда содержит поля `success: false` и `error` с человекочитаемым описанием.\n\n---\n\n## Поддержка\n\nПо вопросам интеграции и техническим вопросам: **support@uchecker.net**\n    "
+  version: 1.0.0
+  contact: {}
+servers:
+- url: https://api.uchecker.net
+  description: Production
+tags:
+- name: ESP Провайдеры
+  description: 'Программный интерфейс для ESP-провайдеров: расчёт стоимости и автоматическое создание аккаунтов с зачислением кредитов'
+paths:
+  /api/v1/esp/price:
+    get:
+      description: 'Возвращает стоимость указанного количества кредитов на валидацию email. Используется ESP-провайдерами для отображения цен в своём интерфейсе.
+
+
+        **Объёмные скидки:**
+
+        Цена за один email снижается при увеличении объёма. Точная формула зависит от условий вашего партнёрского соглашения. Поле `price_per_email` в ответе показывает итоговую цену за один адрес.
+
+
+        **Валюта:**
+
+        Все цены указываются в рублях (RUB). Поле `currency` в ответе всегда содержит `RUB`.
+
+
+        **Аутентификация:**
+
+        Этот эндпоинт использует токен ESP-провайдера (`x-esp-token`), а не стандартные API ключ или JWT. Токен выдаётся при регистрации партнёра.'
+      operationId: EspController_getPrice
+      parameters:
+      - name: count
+        required: true
+        in: query
+        description: 'Количество кредитов для расчёта стоимости. Минимум: 1.'
+        schema:
+          example: 10000
+          type: number
+      - name: x-esp-token
+        required: true
+        in: header
+        description: Токен аутентификации ESP-провайдера. Выдаётся при регистрации партнёра.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: 'Расчёт стоимости: общая цена, цена за email, валюта.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+        '401':
+          description: Токен ESP-провайдера отсутствует, невалиден или деактивирован.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EspErrorResponse'
+      summary: Рассчитать стоимость кредитов
+      tags:
+      - ESP Провайдеры
+  /api/v1/esp/provision:
+    post:
+      description: 'Создаёт новый аккаунт UChecker или пополняет кредиты существующему. Основной эндпоинт для ESP-провайдеров, вызываемый после подтверждения оплаты пользователем.
+
+
+        **Логика работы:**
+
+        - Если аккаунт с указанным email **не существует** — создаётся новый аккаунт, генерируется API ключ, зачисляются кредиты. Поле `is_new_account: true`.
+
+        - Если аккаунт **существует** — кредиты добавляются к текущему балансу. Поле `is_new_account: false`.
+
+
+        **Идемпотентность:**
+
+        Передайте `external_id` (ID заказа на стороне ESP). При повторном вызове с тем же `external_id` кредиты не будут зачислены повторно — вернётся исходный ответ с `is_duplicate: true`.
+
+
+        **Возвращаемые данные:**
+
+        Ответ содержит `api_key` аккаунта — передайте его пользователю для доступа к API. Также возвращаются `credits_added` (зачислено) и `total_credits` (итоговый баланс).
+
+
+        **Аутентификация:**
+
+        Требуется токен ESP-провайдера в заголовке `x-esp-token`.'
+      operationId: EspController_provisionAccount
+      parameters:
+      - name: x-esp-token
+        required: true
+        in: header
+        description: Токен аутентификации ESP-провайдера. Выдаётся при регистрации партнёра.
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProvisionAccountDto'
+      responses:
+        '200':
+          description: Аккаунт создан или пополнен. Ответ содержит API ключ, зачисленные и итоговые кредиты.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisionResponse'
+        '400':
+          description: Ошибка при создании аккаунта или зачислении кредитов.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EspErrorResponse'
+        '401':
+          description: Токен ESP-провайдера отсутствует, невалиден или деактивирован.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EspErrorResponse'
+      summary: Создать аккаунт или пополнить кредиты
+      tags:
+      - ESP Провайдеры
+components:
+  schemas:
+    ProvisionAccountDto:
+      type: object
+      properties:
+        email:
+          type: string
+          description: Email-адрес пользователя. Если аккаунт с таким email существует — кредиты будут добавлены к текущему балансу. Если нет — будет создан новый аккаунт.
+          example: user@example.com
+        credits:
+          type: number
+          description: Количество кредитов для зачисления на аккаунт. 1 кредит = 1 проверка email-адреса.
+          example: 10000
+          minimum: 1
+        external_id:
+          type: string
+          description: Внешний идентификатор заказа/транзакции на стороне ESP-провайдера. Используется для идемпотентности — повторный запрос с тем же `external_id` не создаст дубликат.
+          example: order_12345
+      required:
+      - email
+      - credits
+    PriceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+          description: Признак успешного расчёта
+        credits:
+          type: number
+          example: 10000
+          description: Запрошенное количество кредитов
+        price:
+          type: number
+          example: 2000
+          description: Общая стоимость в рублях (RUB)
+        price_per_email:
+          type: number
+          example: 0.2
+          description: Стоимость одного кредита (проверки одного email) в рублях. Уменьшается при увеличении объёма.
+        currency:
+          type: string
+          example: RUB
+          description: Код валюты. Всегда `RUB`.
+      required:
+      - success
+      - credits
+      - price
+      - price_per_email
+      - currency
+    ProvisionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+          description: Признак успешного выполнения операции
+        message:
+          type: string
+          example: Аккаунт создан и лимиты зачислены успешно
+          description: Человекочитаемое описание результата
+        account_id:
+          type: number
+          example: 123
+          description: Числовой идентификатор аккаунта UChecker
+        email:
+          type: string
+          example: user@example.com
+          description: Email-адрес аккаунта
+        api_key:
+          type: string
+          example: uk_xxxxxxxxxxxxx
+          description: API ключ аккаунта. Передайте пользователю для доступа к API. Для новых аккаунтов — только что сгенерированный ключ.
+        credits_added:
+          type: number
+          example: 10000
+          description: Количество кредитов, зачисленных в рамках этой операции
+        total_credits:
+          type: number
+          example: 10000
+          description: Итоговый баланс кредитов на аккаунте (включая ранее зачисленные)
+        is_new_account:
+          type: boolean
+          example: false
+          description: '`true` — создан новый аккаунт, `false` — кредиты добавлены к существующему'
+        is_duplicate:
+          type: boolean
+          example: false
+          description: '`true` — запрос с таким `external_id` уже обработан ранее. Кредиты не были зачислены повторно (идемпотентный ответ).'
+      required:
+      - success
+      - message
+      - account_id
+      - email
+      - api_key
+      - credits_added
+      - total_credits
+      - is_new_account
+    EspErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+          description: Всегда `false` для ошибок
+        error:
+          type: string
+          example: Неверный токен провайдера
+          description: Описание ошибки
+      required:
+      - success
+      - error
+  securitySchemes:
+    api-key:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Персональный API ключ. Отображается в личном кабинете (https://app.uchecker.net). Передавайте в заголовке `x-api-key` каждого запроса. Ключ не имеет срока действия — действует до ручного сброса через `POST /auth/reset-api-key`.
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: JWT access token, полученный через `POST /auth/login`. Время жизни — 1 час. Для обновления используйте `POST /auth/refresh` с refresh token.

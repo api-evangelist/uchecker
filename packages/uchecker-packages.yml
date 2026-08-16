@@ -1,0 +1,34 @@
+generated: '2026-08-16'
+method: searched
+source: >-
+  https://registry.npmjs.org/-/v1/search?text=uchecker (0 results),
+  https://pypi.org/pypi/uchecker/json (404), https://api.github.com/orgs/uchecker (404),
+  https://api.uchecker.net/docs (OpenAPI description — curl examples only),
+  https://uchecker.net/en/mcp
+name: uChecker
+package_count: 0
+packages: []
+note: >-
+  uChecker publishes NO first-party client libraries. Searched npm (registry search for
+  "uchecker" returned zero objects; direct probes of uchecker, uchecker-api, uchecker-sdk,
+  uchecker-mcp and @uchecker/mcp all 404), PyPI (uchecker, uchecker-api both 404), and
+  GitHub (no github.com/uchecker organisation — api.github.com/orgs/uchecker returns 404;
+  the 16 GitHub repositories matching "uchecker" all belong to unrelated projects such as
+  cloudlinux/kcare-uchecker and lipiji/uChecker). The published integration surface is raw
+  HTTP: the OpenAPI description documents curl calls against https://api.uchecker.net, and
+  the agent surface is the hosted MCP server at https://api.uchecker.net/mcp rather than an
+  installable package. No `version:`/`published:` fields are recorded below because there is
+  nothing to record — package_count is an honest zero, not an unchecked field.
+registries_checked:
+  - registry: npm
+    endpoint: https://registry.npmjs.org/-/v1/search?text=uchecker
+    result: 0 matches
+  - registry: npm
+    endpoint: https://registry.npmjs.org/<name>
+    result: 404 for uchecker, uchecker-api, uchecker-sdk, uchecker-mcp, @uchecker/mcp
+  - registry: pypi
+    endpoint: https://pypi.org/pypi/<name>/json
+    result: 404 for uchecker, uchecker-api
+  - registry: github
+    endpoint: https://api.github.com/orgs/uchecker
+    result: 404 — no organisation

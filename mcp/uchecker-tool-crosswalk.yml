@@ -1,0 +1,173 @@
+generated: '2026-08-16'
+method: derived
+source: >-
+  mcp/uchecker-mcp.yml (tool list from https://uchecker.net/en/mcp) +
+  openapi/uchecker-email-api-openapi.yml, openapi/uchecker-default-api-openapi.yml
+name: uChecker MCP <-> REST crosswalk
+note: >-
+  The live MCP endpoint gates tools/list behind an API key (HTTP 401), so the real
+  inputSchema of each tool could not be read. Tools are bound to backing OpenAPI
+  operations by name and documented semantics; each tool inherits the parameters and
+  requestBody of the operation(s) named in `rest`. Confidence is set honestly — `high`
+  where the tool name and the operation are a one-to-one match with identical semantics,
+  `medium` where the tool composes or wraps operations.
+surfaces:
+  openapi:
+    - path: openapi/uchecker-email-api-openapi.yml
+      gated: false
+      note: 10 operations, tag "Валидация Email"
+    - path: openapi/uchecker-default-api-openapi.yml
+      gated: false
+      note: 21 operations — Аутентификация, Биллинг, Партнёрская программа
+    - path: openapi/uchecker-esp-api-openapi.yml
+      gated: false
+      note: 2 operations, tag "ESP Провайдеры"
+  graphql: null
+  mcp:
+    url: https://api.uchecker.net/mcp
+    gated: true
+    note: tools/list returns JSON-RPC error -32001 without an x-api-key header
+coverage:
+  mcp_tools: 10
+  mapped_to_rest: 9
+  mcp_only: 1
+  rest_operations_total: 33
+  rest_only: 24
+crosswalk:
+  - tool: validate_email
+    category: validation
+    rest:
+      - ValidationController_validateSingle
+    binding: one-to-one
+    confidence: high
+    note: >-
+      POST /api/v1/validate/single. Inherits SingleValidationDto — email (required),
+      client_type, webhook_url. Returns a queued task_id; 403 when credits are exhausted.
+  - tool: validate_emails
+    category: validation
+    rest:
+      - ValidationController_validateBulk
+    binding: one-to-one
+    confidence: high
+    note: >-
+      POST /api/v1/validate/bulk. Inherits BulkValidationDto — emails[] (required),
+      client_type, webhook_url, websocket_id, idempotency_key. The provider's MCP page caps
+      a call at 10,000 addresses; the REST endpoint itself accepts far larger jobs (the
+      marketing surface quotes up to 9 million per task), so the 10k ceiling is an
+      MCP-layer constraint rather than an API one.
+  - tool: get_task_status
+    category: task
+    rest:
+      - ValidationController_getTask
+    binding: one-to-one
+    confidence: high
+    note: GET /api/v1/tasks/{taskId} — status plus progress_percent.
+  - tool: wait_for_task
+    category: task
+    rest:
+      - ValidationController_getTask
+    binding: composite
+    confidence: medium
+    note: >-
+      No REST equivalent — this is server-side polling of GET /api/v1/tasks/{taskId} until
+      the task reaches completed or failed. The OpenAPI description recommends a 5-10s
+      poll interval for clients doing this themselves.
+  - tool: get_task_results
+    category: task
+    rest:
+      - ValidationController_getTaskResults
+    binding: one-to-one
+    confidence: high
+    note: >-
+      GET /api/v1/tasks/{taskId}/results with format=json|csv. Good/bad filtering described
+      on the MCP page is not a documented REST query parameter, so that filter is likely
+      applied MCP-side over TaskResultsJsonResponse.
+  - tool: get_task_analytics
+    category: task
+    rest:
+      - ValidationController_getTaskAnalytics
+    binding: one-to-one
+    confidence: high
+    note: GET /api/v1/tasks/{taskId}/analytics — TaskAnalyticsResponse with rejection reasons.
+  - tool: export_results
+    category: task
+    rest:
+      - ValidationController_downloadCsv
+      - ValidationController_downloadTaskResults
+    binding: one-to-many
+    confidence: medium
+    note: >-
+      Two REST download surfaces back one tool — /results/csv returns a CSV file and
+      /download returns a ZIP containing good.txt and bad.txt. The MCP tool description
+      ("Export results (CSV, good/bad lists)") covers both.
+  - tool: list_tasks
+    category: task
+    rest:
+      - ValidationController_getTasks
+    binding: one-to-one
+    confidence: high
+    note: GET /api/v1/tasks — paginated with page (default 1) and limit (1-100, default 10).
+  - tool: get_account_balance
+    category: account
+    rest:
+      - ValidationController_getBalance
+    binding: one-to-one
+    confidence: high
+    note: GET /api/v1/account/balance — AccountBalanceResponse.
+  - tool: get_account_stats
+    category: account
+    rest:
+      - ValidationController_getStats
+    binding: one-to-one
+    confidence: high
+    note: GET /api/v1/account/stats — AccountStatsResponse.
+mcp_only: []
+rest_only:
+  - operation: AuthController_login
+    reason: Session/credential management — the MCP server authenticates with a long-lived API key instead.
+  - operation: AuthController_refresh
+    reason: JWT lifecycle, not applicable to api-key MCP auth.
+  - operation: AuthController_telegramLogin
+    reason: Telegram sign-in flow, human-only.
+  - operation: AuthController_forgotPassword
+    reason: Account recovery, human-only.
+  - operation: AuthController_resetPassword
+    reason: Account recovery, human-only.
+  - operation: AuthController_resetApiKey
+    reason: Credential rotation — deliberately not exposed to an agent.
+  - operation: AuthController_initiateLinkTelegram
+    reason: Telegram account linking, human-only.
+  - operation: AuthController_confirmLink
+    reason: Telegram account linking, human-only.
+  - operation: AuthController_confirmLinkSimple
+    reason: Telegram account linking, human-only.
+  - operation: AuthController_getPendingLinks
+    reason: Telegram account linking, human-only.
+  - operation: AuthController_registerWithCode
+    reason: Account creation, human-only.
+  - operation: BillingController_getPaymentHistory
+    reason: Payment history has no MCP tool; only balance and stats are exposed.
+  - operation: EspController_getPrice
+    reason: ESP partner surface, gated behind a separate ESP provider token.
+  - operation: EspController_provisionAccount
+    reason: ESP partner surface, gated behind a separate ESP provider token.
+  - operation: ReferralController_trackClick
+    reason: Affiliate programme, not part of the validation surface.
+  - operation: ReferralController_getMe
+    reason: Affiliate programme, not part of the validation surface.
+  - operation: ReferralController_getStats
+    reason: Affiliate programme, not part of the validation surface.
+  - operation: ReferralController_getReferrals
+    reason: Affiliate programme, not part of the validation surface.
+  - operation: ReferralController_getEarnings
+    reason: Affiliate programme, not part of the validation surface.
+  - operation: ReferralAdminController_createPayout
+    reason: Affiliate administration, internal/privileged.
+  - operation: ReferralAdminController_updateRate
+    reason: Affiliate administration, internal/privileged.
+  - operation: ReferralAdminController_setAccess
+    reason: Affiliate administration, internal/privileged.
+  - operation: ReferralAdminController_reverseEarning
+    reason: Affiliate administration, internal/privileged.
+  - operation: ValidationController_downloadTaskResults
+    reason: Folded into export_results together with downloadCsv; counted once above.

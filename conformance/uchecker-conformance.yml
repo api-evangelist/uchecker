@@ -1,0 +1,136 @@
+generated: '2026-08-16'
+method: derived
+source: >-
+  openapi/_original/uchecker-openapi.json, conventions/uchecker-conventions.yml,
+  errors/uchecker-problem-types.yml, security/uchecker-domain-security.yml,
+  https://uchecker.net/en/mcp, https://uchecker.net/privacy-policy
+name: uChecker standards conformance
+note: >-
+  Asserted only where evidence exists in a captured artifact or a probed page. `conforms:
+  false` means we looked and did not find it — it is a measurement, not an accusation. No
+  compliance certification (SOC 2, ISO 27001, PCI, HIPAA, FedRAMP) is claimed anywhere on
+  uChecker's site, so NO `Compliance` pointer is emitted.
+standards:
+  - id: openapi
+    version: '3.0.0'
+    conforms: true
+    evidence: >-
+      https://api.uchecker.net/docs/openapi.json returns a valid OpenAPI 3.0.0 document,
+      33 operations, 40 component schemas, 2 securitySchemes, every operation tagged and
+      carrying a unique operationId. Captured at openapi/_original/uchecker-openapi.json.
+  - id: mcp
+    version: streamable-http
+    conforms: true
+    evidence: >-
+      https://api.uchecker.net/mcp answered a JSON-RPC 2.0 error object to a tools/list
+      POST (code -32001, auth required), confirming a live JSON-RPC MCP endpoint. 10 tools
+      documented at https://uchecker.net/en/mcp.
+  - id: oauth2
+    conforms: false
+    evidence: >-
+      No oauth2 securityScheme in the OpenAPI; /.well-known/oauth-authorization-server and
+      /.well-known/oauth-protected-resource both 404 on api.uchecker.net. Auth is an
+      opaque API key or a first-party JWT issued by POST /auth/login.
+  - id: oidc
+    conforms: false
+    evidence: /.well-known/openid-configuration returns 404 on every uChecker host.
+  - id: rfc9457
+    conforms: false
+    evidence: >-
+      Errors are application/json with a custom {success:false, error:"<russian text>"}
+      envelope. No application/problem+json media type appears anywhere in the spec.
+  - id: rfc8594
+    conforms: false
+    evidence: >-
+      No Sunset or Deprecation response headers documented; no deprecation policy page.
+      See lifecycle/uchecker-lifecycle.yml.
+  - id: rfc9110-conditional
+    conforms: partial
+    evidence: >-
+      Live responses carry a weak ETag (observed `etag: W/"8f-..."` on api.uchecker.net),
+      emitted by the Express stack, but no conditional-request semantics
+      (If-None-Match/If-Modified-Since) are documented in the contract.
+  - id: idempotency
+    conforms: partial
+    evidence: >-
+      POST /api/v1/validate/bulk accepts a caller-supplied `idempotency_key` in the request
+      body that returns the existing task's status instead of creating a duplicate. It is a
+      body field rather than an Idempotency-Key header, no retention window is published,
+      and POST /api/v1/validate/single has no equivalent. See
+      conventions/uchecker-conventions.yml.
+  - id: pagination
+    conforms: true
+    evidence: >-
+      Consistent page/limit query parameters (limit 1-100, default 10) with a `pagination`
+      envelope carrying page, limit, total and totalPages. components.schemas.PaginationInfo.
+  - id: rate-limit-headers
+    conforms: false
+    evidence: >-
+      No RateLimit-* or X-RateLimit-* headers on live responses, and the provider states
+      plainly that no rate limits exist. Quota is enforced by credit balance and surfaces
+      as HTTP 403.
+  - id: webhooks
+    conforms: partial
+    evidence: >-
+      A `webhook_url` may be supplied on both single and bulk validation; uChecker POSTs
+      results to it on completion and expects an HTTP 200. There is no signature scheme, no
+      retry policy, no event catalogue, and no `webhooks:` block in the OpenAPI 3.0 document.
+      See asyncapi/uchecker-webhooks.yml.
+  - id: asyncapi
+    conforms: false
+    evidence: >-
+      No AsyncAPI document published; /asyncapi.yaml and /asyncapi.json are not served. A
+      WebSocket progress channel exists (websocket_id on bulk submission) but is
+      undocumented.
+  - id: graphql
+    conforms: false
+    evidence: No /graphql surface on api.uchecker.net or uchecker.net.
+  - id: tls
+    conforms: true
+    evidence: >-
+      api.uchecker.net negotiates TLSv1.3 with HSTS max-age 31536000. See
+      security/uchecker-domain-security.yml.
+  - id: dnssec
+    conforms: false
+    evidence: uchecker.net is not DNSSEC-signed (probed 2026-08-16).
+  - id: spf
+    conforms: true
+    evidence: uchecker.net publishes an SPF record.
+  - id: dmarc
+    conforms: true
+    evidence: uchecker.net publishes DMARC with policy p=reject.
+  - id: caa
+    conforms: false
+    evidence: No CAA records on uchecker.net.
+  - id: rfc9116-security-txt
+    conforms: false
+    evidence: /.well-known/security.txt 404s on api.uchecker.net and uchecker.net.
+  - id: llmstxt
+    conforms: true
+    evidence: >-
+      https://uchecker.net/llms.txt returns a real 140,498-byte llms.txt (H1 + blockquote
+      summary + linked sections), saved verbatim to llms/uchecker-llms.txt.
+  - id: a2a
+    conforms: false
+    evidence: >-
+      /.well-known/agent-card.json and /.well-known/agent.json 404 on api.uchecker.net and
+      uchecker.net; app.uchecker.net answers 200 with an SPA shell for every path, which is
+      not a card.
+  - id: rfc5321-rfc5322
+    conforms: true
+    evidence: >-
+      Domain standards of the service itself — uChecker's published methodology checks
+      address syntax against RFC 5321/5322, then DNS/MX, then an SMTP HELO/EHLO + MAIL FROM
+      + RCPT TO probe. Documented at https://uchecker.net/en.
+  - id: gdpr
+    conforms: unknown
+    evidence: >-
+      A privacy policy is published at https://uchecker.net/privacy-policy (HTTP 200) and a
+      Russian-language equivalent at /politika-konfidencialnosti. The operator is a Russian
+      legal entity (ООО «Ю СОФТ ДЕВЕЛОПМЕНТ»); no GDPR, DPA, or data-residency commitment is
+      asserted on the site, and none was found. Recorded as unknown rather than false.
+compliance_certifications: []
+compliance_note: >-
+  No SOC 2, ISO 27001, PCI DSS, HIPAA or FedRAMP claim appears on uchecker.net, and no trust
+  center exists (probe-security-programs.py returned trust=none, vdp=none). Nothing to point
+  a `Compliance` or `TrustCenter` type at.

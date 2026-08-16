@@ -1,0 +1,192 @@
+generated: '2026-08-16'
+method: derived
+source: >-
+  openapi/_original/uchecker-openapi.json — components.schemas ($ref graph and
+  id-reference fields across 40 schemas / 33 operations)
+name: uChecker data model
+note: >-
+  Derived from the published OpenAPI only. uChecker publishes no object reference page, so
+  there are no id prefixes or resource domains to enrich this with — identifiers are plain
+  numeric (task_id is documented as "Числовой идентификатор задачи"). Nothing below is
+  invented; every entity and edge is traceable to a component schema or an operation path.
+
+identifiers:
+  style: numeric
+  prefixed_ids: false
+  examples:
+    - field: task_id
+      type: number
+      example: 123
+      note: The durable correlation handle for every asynchronous unit of work.
+
+entity_count: 8
+entities:
+  - name: Task
+    description: One validation job — a single address or a bulk list.
+    key: task_id
+    schemas:
+      - SingleValidationQueuedResponse
+      - BulkValidationResponse
+      - TaskStatusResponse
+      - TaskListItem
+      - TasksListResponse
+    operations:
+      - ValidationController_validateSingle
+      - ValidationController_validateBulk
+      - ValidationController_getTask
+      - ValidationController_getTasks
+    states: [pending, processing, completed, failed]
+  - name: ValidationResult
+    description: The outcome for one email address inside a task.
+    schemas:
+      - ValidationResultItem
+      - TaskResultsJsonResponse
+    operations:
+      - ValidationController_getTaskResults
+      - ValidationController_downloadCsv
+      - ValidationController_downloadTaskResults
+    note: validation_result is good|bad; `result` carries the detailed reason.
+  - name: TaskAnalytics
+    description: Aggregated deliverability breakdown and rejection reasons for a task.
+    schemas:
+      - TaskAnalyticsResponse
+      - TaskAnalyticsReason
+    operations:
+      - ValidationController_getTaskAnalytics
+  - name: InvalidEmail
+    description: >-
+      An address excluded from a bulk task for invalid syntax before any credit was charged.
+    schemas:
+      - InvalidEmailDetail
+    note: Returned inline on submission in `invalid_details`; never becomes a ValidationResult.
+  - name: Account
+    description: The API consumer — credit balance, statistics, and the API key.
+    schemas:
+      - AccountBalanceResponse
+      - AccountStatsResponse
+      - AccountStatsLastList
+      - UserInfo
+      - ResetApiKeyResponse
+    operations:
+      - ValidationController_getBalance
+      - ValidationController_getStats
+      - AuthController_resetApiKey
+  - name: Session
+    description: JWT access/refresh token pair plus the Telegram link flow.
+    schemas:
+      - LoginDto
+      - LoginResponse
+      - RefreshTokenDto
+      - RefreshTokenResponse
+      - ForgotPasswordDto
+      - ResetPasswordDto
+      - InitiateLinkDto
+      - ConfirmLinkDto
+      - RegisterWithCodeDto
+    operations:
+      - AuthController_login
+      - AuthController_refresh
+      - AuthController_telegramLogin
+      - AuthController_registerWithCode
+  - name: Payment
+    description: A credit purchase / transaction on the account ledger.
+    schemas:
+      - PaymentHistoryItem
+      - PaymentHistoryResponse
+    operations:
+      - BillingController_getPaymentHistory
+  - name: Referral
+    description: >-
+      Affiliate relationship, its earnings ledger, and the admin payout surface. Gated —
+      returns 403 unless the affiliate programme is enabled on the account.
+    schemas:
+      - TrackClickDto
+      - CreatePayoutDto
+      - UpdateRateDto
+      - SetReferralAccessDto
+    operations:
+      - ReferralController_getMe
+      - ReferralController_getStats
+      - ReferralController_getReferrals
+      - ReferralController_getEarnings
+      - ReferralAdminController_createPayout
+      - ReferralAdminController_updateRate
+      - ReferralAdminController_setAccess
+      - ReferralAdminController_reverseEarning
+
+relationships:
+  - from: Account
+    to: Task
+    type: has_many
+    via: implicit ownership — a task is only readable by the account that created it (404 otherwise)
+  - from: Task
+    to: ValidationResult
+    type: has_many
+    via: TaskResultsJsonResponse.results[] -> ValidationResultItem ($ref)
+  - from: Task
+    to: TaskAnalytics
+    type: has_one
+    via: GET /api/v1/tasks/{taskId}/analytics
+  - from: TaskAnalytics
+    to: TaskAnalyticsReason
+    type: has_many
+    via: TaskAnalyticsResponse -> TaskAnalyticsReason ($ref)
+  - from: Task
+    to: InvalidEmail
+    type: has_many
+    via: BulkValidationResponse.invalid_details[] -> InvalidEmailDetail ($ref)
+  - from: TasksListResponse
+    to: TaskListItem
+    type: has_many
+    via: $ref
+  - from: TasksListResponse
+    to: PaginationInfo
+    type: has_one
+    via: $ref (pagination envelope)
+  - from: PaymentHistoryResponse
+    to: PaymentHistoryItem
+    type: has_many
+    via: $ref
+  - from: PaymentHistoryResponse
+    to: PaginationInfo
+    type: has_one
+    via: $ref
+  - from: Account
+    to: Payment
+    type: has_many
+    via: GET /api/v1/billing/history (scoped to the authenticated account)
+  - from: LoginResponse
+    to: UserInfo
+    type: has_one
+    via: $ref
+  - from: Account
+    to: Session
+    type: has_many
+    via: POST /auth/login issues an access/refresh pair per session
+  - from: Account
+    to: Referral
+    type: has_one
+    via: GET /api/v1/referral/me
+  - from: ESPProvider
+    to: Account
+    type: has_many
+    via: >-
+      POST /api/v1/esp/provision creates or tops up a downstream uChecker account on behalf
+      of an ESP partner (ProvisionAccountDto -> ProvisionResponse). The ESP itself is not
+      modelled as a first-class entity in the spec — it is represented only by its bearer
+      token — so it is recorded here as an edge rather than an entity.
+
+shared_envelopes:
+  - name: PaginationInfo
+    used_by: [TasksListResponse, PaymentHistoryResponse]
+  - name: ErrorResponse
+    used_by: all non-ESP error responses
+  - name: EspErrorResponse
+    used_by: ESP operations
+  - name: UnauthorizedResponse
+    used_by: 401 responses
+  - name: ForbiddenResponse
+    used_by: 403 responses
+
+render: null
+render_note: No subway/ diagram exists for this provider yet.

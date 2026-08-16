@@ -1,0 +1,114 @@
+generated: '2026-08-16'
+method: searched
+source: >-
+  https://api.uchecker.net/docs/openapi.json — components.securitySchemes plus the
+  "Аутентификация" section of info.description; https://uchecker.net/en/mcp
+docs: https://api.uchecker.net/docs
+summary:
+  types:
+  - apiKey
+  - http
+  api_key_in:
+  - header
+  oauth2: false
+  openid_connect: false
+  mtls: false
+  interchangeable: true
+  note: >-
+    Two equivalent schemes — either grants full access to every endpoint. uChecker
+    recommends the API key for server-side integrations ("проще и не требует управления
+    токенами") and the JWT for front-end applications. The ESP endpoints are the one
+    exception: they require a separate ESP provider token.
+schemes:
+- name: api-key
+  type: apiKey
+  in: header
+  parameter: x-api-key
+  key_prefix: uk_
+  expiry: none
+  rotation: POST /auth/reset-api-key (AuthController_resetApiKey) — invalidates the old key immediately
+  obtain: https://app.uchecker.net (shown in the dashboard immediately after registration)
+  example_form: 'x-api-key: uk_xxxxxxxxxxxxx'
+  description: >-
+    Персональный API ключ. Отображается в личном кабинете (https://app.uchecker.net).
+    Передавайте в заголовке `x-api-key` каждого запроса. Ключ не имеет срока действия —
+    действует до ручного сброса через `POST /auth/reset-api-key`.
+  description_en: >-
+    Personal API key, shown in the dashboard. Send it in the `x-api-key` header of every
+    request. It does not expire; it is valid until manually reset.
+  also_used_by:
+    - >-
+      The hosted MCP server at https://api.uchecker.net/mcp accepts the same key, either as
+      an `x-api-key` header or as `Authorization: Bearer <key>`. Confirmed by live probe —
+      an unauthenticated tools/list returned JSON-RPC error -32001 naming both header forms.
+  sources:
+  - openapi/uchecker-default-api-openapi.yml
+  - openapi/uchecker-email-api-openapi.yml
+  - openapi/uchecker-esp-api-openapi.yml
+  - https://uchecker.net/en/mcp
+- name: bearer
+  type: http
+  scheme: bearer
+  bearerFormat: JWT
+  issue_operation: AuthController_login (POST /auth/login)
+  refresh_operation: AuthController_refresh (POST /auth/refresh)
+  access_token_ttl: 1 hour
+  refresh_token_ttl: 7 days
+  refresh_rotation: >-
+    The 200 description on POST /auth/refresh states a NEW pair is returned and the old
+    refresh token is retired — refresh tokens rotate.
+  alternate_issue:
+    - AuthController_telegramLogin (POST /auth/telegram-login) — same response shape, issued against a linked Telegram chat ID
+    - AuthController_registerWithCode (POST /auth/register-with-code)
+  description: >-
+    JWT access token, полученный через `POST /auth/login`. Время жизни — 1 час. Для
+    обновления используйте `POST /auth/refresh` с refresh token.
+  description_en: >-
+    JWT access token obtained via POST /auth/login. Lifetime 1 hour; renew with
+    POST /auth/refresh using the refresh token.
+  sources:
+  - openapi/uchecker-default-api-openapi.yml
+  - openapi/uchecker-email-api-openapi.yml
+  - openapi/uchecker-esp-api-openapi.yml
+- name: esp-provider-token
+  type: bearer-token
+  declared_in_spec: false
+  scope: /api/v1/esp/price, /api/v1/esp/provision
+  description: >-
+    NOT a declared securityScheme — inferred from the 401 descriptions on both ESP
+    operations ("Токен ESP-провайдера отсутствует, невалиден или просрочен" / ESP provider
+    token missing, invalid or expired). A partner-issued credential distinct from the
+    ordinary `uk_` account key; there is no self-service path to obtain one.
+  obtain: partner arrangement — support@uchecker.net
+  sources:
+  - openapi/uchecker-esp-api-openapi.yml
+oauth:
+  supported: false
+  probes:
+    - url: https://api.uchecker.net/.well-known/oauth-authorization-server
+      status: 404
+    - url: https://api.uchecker.net/.well-known/oauth-protected-resource
+      status: 404
+    - url: https://api.uchecker.net/.well-known/openid-configuration
+      status: 404
+  note: >-
+    No OAuth 2.0 or OpenID Connect anywhere, including on the MCP endpoint — the MCP server
+    authenticates with the same static API key rather than an OAuth flow. See
+    scopes/ (absent: no oauth2 securityScheme, so there is nothing to derive).
+failure_modes:
+  - status: 401
+    meaning: Missing or invalid API key / JWT, or an expired access token.
+  - status: 403
+    meaning: >-
+      Authenticated but not permitted — insufficient credits, or a feature (the affiliate
+      programme) not enabled on the account. Authentication succeeded; authorisation or
+      quota failed.
+transport_security:
+  https_only: true
+  tls: TLSv1.3
+  hsts: max-age=31536000
+  see_also: security/uchecker-domain-security.yml
+gaps_for_the_provider:
+  - Declare the ESP provider token as a securityScheme instead of leaving it in prose.
+  - Document the API key entropy/format beyond the `uk_` prefix.
+  - No scoped keys: one key grants full access to validation, billing and account management.

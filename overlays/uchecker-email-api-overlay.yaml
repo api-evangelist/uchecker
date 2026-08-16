@@ -1,0 +1,123 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancement overlay for uChecker Валидация Email API
+  version: 1.0.0
+extends: openapi/uchecker-email-api-openapi.yml
+generated: '2026-08-16'
+method: generated
+source: >-
+  openapi/uchecker-email-api-openapi.yml, conventions/uchecker-conventions.yml,
+  errors/uchecker-problem-types.yml, asyncapi/uchecker-webhooks.yml,
+  rate-limits/uchecker-rate-limits.yml, mcp/uchecker-tool-crosswalk.yml
+rationale: >-
+  uChecker's published contract carries its integration guidance in one large Russian-language
+  info.description blob: the credit model, the "no rate limits" statement, the task lifecycle,
+  the error envelope and the polling advice are all prose. None of it is attached to the
+  operations it governs, and none of it is in English. This overlay attaches the runtime
+  semantics to the operations themselves, in machine-readable extensions, WITHOUT mutating the
+  original spec. It also records the two contract defects found during enrichment (single
+  validation has no idempotency key; the callback payload is unspecified) so a consumer sees
+  them at the point of use. Apply with any Overlay 1.0.0 processor.
+actions:
+  - target: $.info
+    description: Record the runtime conventions of the API as structured extensions.
+    update:
+      x-api-evangelist:
+        conventions: conventions/uchecker-conventions.yml
+        errors: errors/uchecker-problem-types.yml
+        webhooks: asyncapi/uchecker-webhooks.yml
+        rate-limits: rate-limits/uchecker-rate-limits.yml
+        data-model: data-model/uchecker-data-model.yml
+        mcp: mcp/uchecker-mcp.yml
+      x-metering:
+        model: prepaid-credits
+        unit: 1 email = 1 credit
+        charged_at: enqueue
+        not_charged: syntactically invalid addresses in a bulk submission
+        balance_operation: ValidationController_getBalance
+        exhaustion_status: 403
+      x-rate-limits:
+        published: false
+        provider_statement: There are no rate limits; throughput is governed by credit balance.
+        response_headers: []
+        status_on_exhaustion: 403
+      x-error-envelope:
+        format: custom-json
+        rfc9457: false
+        fields:
+          success: boolean, always false
+          error: human-readable string, Russian
+        machine_readable_code: false
+      x-language:
+        contract: ru
+        error_messages: ru
+        note: >-
+          The reference, the tag names and every error string are Russian. An English
+          product surface exists at https://uchecker.net/en but the contract is not
+          translated.
+  - target: $.paths['/api/v1/validate/bulk'].post
+    description: Surface the idempotency contract on the one operation that supports it.
+    update:
+      x-idempotency:
+        supported: true
+        mechanism: request-body-field
+        field: idempotency_key
+        header: null
+        behavior: >-
+          A repeat submission carrying an existing key returns the current status of the
+          existing task instead of creating a new one and re-charging credits.
+        retention: undocumented
+      x-async:
+        pattern: submit-then-poll
+        poll_operation: ValidationController_getTask
+        recommended_interval_seconds: 5-10
+        push_alternative: webhook_url
+  - target: $.paths['/api/v1/validate/single'].post
+    description: >-
+      Flag that the single-address endpoint has no idempotency protection — a retry
+      double-charges.
+    update:
+      x-idempotency:
+        supported: false
+        note: >-
+          Unlike POST /api/v1/validate/bulk, this operation accepts no idempotency_key. A
+          network-level retry creates a second task and debits a second credit. Prefer the
+          bulk endpoint with a single-element array when a retry is possible.
+      x-async:
+        pattern: submit-then-poll
+        poll_operation: ValidationController_getTask
+        push_alternative: webhook_url
+  - target: $.components.schemas.BulkValidationDto.properties.webhook_url
+    description: Record that the callback payload is unspecified and unsigned.
+    update:
+      x-callback:
+        payload_schema: unpublished
+        signing: none
+        retries: undocumented
+        expected_response: 200
+        note: >-
+          uChecker POSTs results to this URL on completion but publishes no payload schema
+          and no signature. Verify the outcome out-of-band via
+          ValidationController_getTaskResults before acting on a callback.
+  - target: $.components.schemas.ValidationResultItem
+    description: Record the contract/marketing discrepancy in the result model.
+    update:
+      x-result-model:
+        contract: binary — validation_result is good | bad
+        marketing: >-
+          The website and dashboard describe Good / Bad / Risk archives and a five-way read
+          (deliverable, undeliverable, catch-all, disposable, role-based) plus an "unknown"
+          bucket.
+        guidance: >-
+          Build against the contract. Expect good|bad from the API and treat the richer
+          taxonomy as a dashboard-only presentation until the provider documents it.
+  - target: $.components.schemas.PaginationInfo
+    description: Name the pagination style explicitly.
+    update:
+      x-pagination:
+        style: page-number
+        params: [page, limit]
+        limit_min: 1
+        limit_max: 100
+        limit_default: 10
+        cursor: false

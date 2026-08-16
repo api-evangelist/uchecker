@@ -1,0 +1,86 @@
+generated: '2026-08-16'
+method: searched
+source: https://uchecker.net/en/mcp
+name: uChecker MCP Server
+status: published
+description: >-
+  First-party hosted MCP server for uChecker email validation. Streamable HTTP transport,
+  authenticated with the same uChecker API key used by the REST API (x-api-key header, or
+  Authorization: Bearer <key>). Gives an agent single and bulk email validation, task
+  polling, result paging, analytics and export without writing REST integration code.
+deployment:
+  mode: remote
+  endpoint: https://api.uchecker.net/mcp
+  install: ''
+  package: ''
+  auth: api-key
+  verified: probed
+x-evidence:
+  fetched: '2026-08-16'
+  probe:
+    url: https://api.uchecker.net/mcp
+    method: POST
+    body: '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+    http_status: 401
+    response: >-
+      {"jsonrpc":"2.0","error":{"code":-32001,"message":"Unauthorized: provide your
+      UChecker API key in the x-api-key header or as Authorization: Bearer <key>."},"id":null}
+    verdict: >-
+      The endpoint is live and speaks JSON-RPC — it returned a well-formed JSON-RPC error
+      object, not an HTML page — but tools/list and initialize are both auth-gated behind a
+      uChecker API key. Live inputSchema introspection therefore requires an authenticated
+      session; the tool list below is transcribed verbatim from the provider's own MCP page
+      (names + descriptions only) and the parameter shapes are crosswalked to the published
+      OpenAPI operations in mcp/uchecker-tool-crosswalk.yml.
+transport: streamable-http
+authentication:
+  type: api-key
+  header: x-api-key
+  alternate_header: 'Authorization: Bearer <key>'
+  key_prefix: uk_
+  obtain: https://app.uchecker.net
+clients_documented:
+  - client: Claude Code (CLI)
+    command: >-
+      claude mcp add --transport http uchecker https://api.uchecker.net/mcp --header
+      "x-api-key: uk_YOUR_KEY"
+  - client: Cursor / VS Code / any MCP-compatible client
+    config: |
+      {
+        "mcpServers": {
+          "uchecker": {
+            "type": "http",
+            "url": "https://api.uchecker.net/mcp",
+            "headers": { "x-api-key": "uk_YOUR_KEY" }
+          }
+        }
+      }
+tool_count: 10
+tools:
+  - name: validate_email
+    description: Validate a single email address
+  - name: validate_emails
+    description: Bulk-validate a list (up to 10,000 per call)
+  - name: wait_for_task
+    description: Wait until a validation task completes
+  - name: get_task_status
+    description: Task status and progress
+  - name: get_task_results
+    description: Paged results with good/bad filtering
+  - name: get_task_analytics
+    description: Deliverability and rejection reasons
+  - name: export_results
+    description: Export results (CSV, good/bad lists)
+  - name: list_tasks
+    description: Task history
+  - name: get_account_balance
+    description: Credits balance
+  - name: get_account_stats
+    description: Account-wide statistics
+metering: >-
+  Pricing matches the REST API — 1 email = 1 credit; syntactically invalid addresses are
+  not charged. There is no separate MCP price list.
+provider_guidance: >-
+  uChecker's own MCP page notes that an SMTP check is a live conversation with the
+  recipient's mail server and is subject to greylisting and receiver-side rate limits, so
+  an agent should run validation as a background task rather than a synchronous step.

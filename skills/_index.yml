@@ -1,0 +1,49 @@
+generated: '2026-08-16'
+method: generated
+source: >-
+  Packaged Agent Skills generated from uChecker's published OpenAPI (split one-per-tag under
+  openapi/; source in openapi/_original/uchecker-openapi.json). Every step is grounded in an
+  operationId verified verbatim in the spec; cross-cutting rules cite ../authentication/,
+  ../conventions/, ../errors/, ../asyncapi/, ../plans/ and ../rate-limits/. uChecker
+  publishes no first-party skills or AGENTS.md — searched uchecker.net (569-URL sitemap),
+  https://uchecker.net/llms.txt and https://uchecker.net/en/mcp; its agent surface is the
+  hosted MCP server's 10 tools.
+skill_count: 3
+skills:
+  - file: uchecker-validate-a-single-email.md
+    name: Validate a single email address
+    api: openapi/uchecker-email-api-openapi.yml
+    operations:
+      - ValidationController_validateSingle
+      - ValidationController_getTask
+      - ValidationController_getTaskResults
+      - ValidationController_getBalance
+    mcp_tools: [validate_email, get_task_status, get_task_results, get_account_balance]
+  - file: uchecker-clean-a-mailing-list.md
+    name: Clean a mailing list in bulk
+    api: openapi/uchecker-email-api-openapi.yml
+    operations:
+      - ValidationController_getBalance
+      - ValidationController_validateBulk
+      - ValidationController_getTask
+      - ValidationController_getTaskAnalytics
+      - ValidationController_getTaskResults
+      - ValidationController_downloadCsv
+      - ValidationController_downloadTaskResults
+    mcp_tools: [validate_emails, wait_for_task, get_task_analytics, get_task_results, export_results]
+    note: >-
+      The marquee flow, and the only validation path protected by an idempotency key.
+  - file: uchecker-audit-credit-spend.md
+    name: Audit credit spend and job history
+    api: openapi/uchecker-email-api-openapi.yml
+    operations:
+      - ValidationController_getBalance
+      - ValidationController_getStats
+      - ValidationController_getTasks
+      - ValidationController_getTaskAnalytics
+      - BillingController_getPaymentHistory
+    mcp_tools: [get_account_balance, get_account_stats, list_tasks, get_task_analytics]
+    note: >-
+      Spend guardrail. uChecker emits no rate-limit or remaining-credit headers, so an agent
+      can only learn its budget by asking.
+crosswalk: mcp/uchecker-tool-crosswalk.yml

@@ -1,0 +1,107 @@
+generated: '2026-08-16'
+method: searched
+source: https://uchecker.net/en#tariffs
+docs: https://uchecker.net/en
+name: uChecker pricing
+model: prepaid credit packs
+currency: RUB
+billing_period: one-off (prepaid; credits do not expire per any published statement)
+unit: 1 email checked = 1 credit
+metering_note: >-
+  Credits are debited the moment an address is queued, not when the result returns.
+  Syntactically invalid addresses submitted in a bulk job are excluded free of charge and
+  returned in `invalid_details`. Running out of credits returns HTTP 403, not 429 — see
+  errors/uchecker-problem-types.yml.
+plan_count: 11
+plans:
+  - name: Free
+    price: 0
+    currency: RUB
+    period: one-off
+    included_quota: 100 addresses
+    unit_price: 0
+    overage: none — top up with a paid pack
+    limits: >-
+      First 100 addresses free; enough to run a sample. No credit card required. Sign up at
+      app.uchecker.net or via the Telegram bot @uchecker_bot.
+  - name: 1 000 addresses
+    price: 200
+    currency: RUB
+    period: one-off
+    included_quota: 1000
+    unit_price: 0.20
+  - name: 5 000 addresses
+    price: 1000
+    currency: RUB
+    period: one-off
+    included_quota: 5000
+    unit_price: 0.20
+  - name: 10 000 addresses
+    price: 2000
+    currency: RUB
+    period: one-off
+    included_quota: 10000
+    unit_price: 0.20
+  - name: 25 000 addresses
+    price: 3750
+    currency: RUB
+    period: one-off
+    included_quota: 25000
+    unit_price: 0.15
+  - name: 50 000 addresses
+    price: 7500
+    currency: RUB
+    period: one-off
+    included_quota: 50000
+    unit_price: 0.15
+  - name: 100 000 addresses
+    price: 15000
+    currency: RUB
+    period: one-off
+    included_quota: 100000
+    unit_price: 0.15
+  - name: 200 000 addresses
+    price: 16000
+    currency: RUB
+    period: one-off
+    included_quota: 200000
+    unit_price: 0.08
+    badge: Best value
+  - name: 500 000 addresses
+    price: 25000
+    currency: RUB
+    period: one-off
+    included_quota: 500000
+    unit_price: 0.05
+  - name: 750 000 addresses
+    price: 37500
+    currency: RUB
+    period: one-off
+    included_quota: 750000
+    unit_price: 0.05
+  - name: 1 000 000 addresses
+    price: 50000
+    currency: RUB
+    period: one-off
+    included_quota: 1000000
+    unit_price: 0.05
+api_access:
+  gated_by_plan: false
+  note: >-
+    The REST API, the hosted MCP server, the web dashboard and the Telegram bot all draw on
+    the same credit balance. There is no API-only tier, no per-seat charge, and no separate
+    MCP price list — uChecker's MCP page states plainly that "Pricing matches the API".
+enterprise:
+  contact_sales: false
+  note: >-
+    No "contact us" enterprise tier is advertised on the public pricing table; the largest
+    published pack is 1,000,000 addresses. An ESP partner programme exists
+    (POST /api/v1/esp/price and /api/v1/esp/provision) which prices and provisions
+    downstream accounts programmatically, but its rates are not published — they are
+    computed per ESP token by the price endpoint.
+caveats:
+  - >-
+    All prices are in Russian roubles only. No USD/EUR list price is published, and the
+    accepted payment methods shown on the pricing block are Russian rails.
+  - >-
+    Credit expiry is not stated anywhere in the pricing block or the terms of service.

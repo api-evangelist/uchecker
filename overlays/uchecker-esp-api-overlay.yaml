@@ -1,0 +1,62 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancement overlay for uChecker ESP Провайдеры API
+  version: 1.0.0
+extends: openapi/uchecker-esp-api-openapi.yml
+generated: '2026-08-16'
+method: generated
+source: >-
+  openapi/uchecker-esp-api-openapi.yml, authentication/uchecker-authentication.yml,
+  errors/uchecker-problem-types.yml, plans/uchecker-plans-pricing.yml
+rationale: >-
+  The two-operation ESP surface is uChecker's white-label channel: an email service provider
+  prices a volume and provisions a downstream uChecker account with credits, on behalf of its
+  own customer. It is authenticated differently from the rest of the API — with an ESP
+  provider token rather than an ordinary account key — and its pricing is computed per
+  partner rather than published. Neither fact is stated in the operation descriptions. This
+  overlay records both without mutating the original spec.
+actions:
+  - target: $.info
+    description: Record the distinct auth model and the artifact map for this surface.
+    update:
+      x-api-evangelist:
+        authentication: authentication/uchecker-authentication.yml
+        errors: errors/uchecker-problem-types.yml
+        plans: plans/uchecker-plans-pricing.yml
+        data-model: data-model/uchecker-data-model.yml
+      x-audience: esp-partner
+      x-auth:
+        note: >-
+          These operations require an ESP PROVIDER token, not an ordinary account API key —
+          both 401 responses in this split say "Токен ESP-провайдера отсутствует, невалиден
+          или просрочен" (ESP provider token missing, invalid or expired). The token is
+          issued by uChecker through a partner arrangement; there is no self-service path to
+          it, and it is not the `uk_` key shown in the dashboard.
+        obtain: partner arrangement — contact support@uchecker.net
+      x-pricing:
+        published: false
+        note: >-
+          ESP rates are NOT on the public pricing table. EspController_getPrice returns the
+          partner-specific total and per-email price for a requested volume; the published
+          RUB packs in plans/uchecker-plans-pricing.yml are the retail list, not the ESP list.
+  - target: $.paths['/api/v1/esp/provision'].post
+    description: Flag account provisioning as a side-effecting, non-idempotent operation.
+    update:
+      x-idempotency:
+        supported: false
+        note: >-
+          ProvisionAccountDto carries no idempotency_key. A retried call can create a second
+          downstream account or credit the same balance twice. Read the ProvisionResponse and
+          reconcile before retrying.
+      x-side-effects:
+        - creates a uChecker account for an end customer
+        - credits that account's balance
+      x-agent-guidance: >-
+        Money-moving. Do not retry blindly on a timeout; confirm state first.
+  - target: $.paths['/api/v1/esp/price'].get
+    description: Mark the price calculation as the safe, read-only half of the pair.
+    update:
+      x-safe: true
+      x-agent-guidance: >-
+        Read-only. Call this before provision to confirm the partner rate for the requested
+        volume.

@@ -1,0 +1,145 @@
+generated: '2026-08-16'
+method: searched
+source: >-
+  https://api.uchecker.net/docs/openapi.json — info.description error table plus the 4xx/5xx
+  responses declared on all 33 operations
+docs: https://api.uchecker.net/docs
+name: uChecker error catalog
+format: custom-json
+rfc9457: false
+content_type: application/json
+envelope:
+  fields:
+    - name: success
+      type: boolean
+      always: false
+      description: Always false for errors.
+    - name: error
+      type: string
+      description: Human-readable description of the error, in Russian.
+  note: >-
+    No `type`, `title`, `status`, `detail` or `instance` members — this is not
+    application/problem+json. There is also no stable machine-readable error code, so
+    clients must branch on the HTTP status code and treat `error` as display text only.
+    Two response schemas carry the envelope: ErrorResponse (general) and EspErrorResponse
+    (ESP surface); UnauthorizedResponse and ForbiddenResponse are the 401/403 shapes.
+
+status_count: 7
+statuses:
+  - status: 200
+    title: OK
+    meaning: Request succeeded.
+  - status: 204
+    title: No Content
+    meaning: Accepted with no body.
+    operations:
+      - ReferralController_trackClick
+  - status: 400
+    title: Bad Request
+    meaning: Invalid parameters or malformed data.
+    remediation: >-
+      Validate the request body against the schema before retrying. Retrying unchanged will
+      fail again.
+    seen_on:
+      - AuthController_telegramLogin — no account with the given Telegram chat ID
+      - AuthController_resetPassword — token invalid or expired
+      - AuthController_initiateLinkTelegram — code invalid/expired or account already linked
+      - AuthController_confirmLink — link request not found, expired, or already handled
+      - AuthController_confirmLinkSimple — no pending link requests for the account
+      - AuthController_registerWithCode — Telegram code invalid or expired
+      - EspController_provisionAccount — account creation or credit top-up failed
+      - ReferralAdminController_createPayout — amount exceeds available balance
+  - status: 401
+    title: Unauthorized
+    meaning: Missing or invalid API key / JWT.
+    remediation: >-
+      Send a valid x-api-key (prefix uk_), or refresh the JWT via POST /auth/refresh. A JWT
+      access token lives 1 hour. The ESP endpoints require an ESP provider token rather than
+      an ordinary account key.
+    schema: UnauthorizedResponse
+    seen_on:
+      - ValidationController_validateSingle
+      - ValidationController_validateBulk
+      - ValidationController_getStats
+      - AuthController_login — wrong email or password
+      - AuthController_refresh — refresh token invalid or expired
+      - AuthController_resetApiKey
+      - BillingController_getPaymentHistory
+      - EspController_getPrice
+      - EspController_provisionAccount
+  - status: 403
+    title: Forbidden
+    meaning: >-
+      Insufficient credits on the account, or a feature not enabled for this account.
+    remediation: >-
+      Top up credits (balance readable at GET /api/v1/account/balance) before resubmitting.
+      For the referral endpoints, the affiliate programme must first be enabled on the
+      account. THIS IS THE QUOTA-EXHAUSTION SIGNAL — uChecker meters by credit, not by
+      request rate, so exhaustion surfaces as 403 and never as 429.
+    schema: ForbiddenResponse
+    seen_on:
+      - ValidationController_validateSingle — insufficient credits
+      - ValidationController_validateBulk — insufficient credits for the submitted volume
+      - ReferralController_getStats — affiliate programme not enabled
+      - ReferralController_getReferrals — affiliate programme not enabled
+      - ReferralController_getEarnings — affiliate programme not enabled
+  - status: 404
+    title: Not Found
+    meaning: The task does not exist, or does not belong to your account.
+    remediation: >-
+      Confirm the task_id came from a response on the same account. uChecker deliberately
+      answers 404 rather than 403 for a task owned by another account, so a 404 is not proof
+      the task never existed.
+    seen_on:
+      - ValidationController_getTask
+      - ValidationController_getTaskResults
+      - ValidationController_downloadCsv
+      - ValidationController_downloadTaskResults
+      - ValidationController_getTaskAnalytics
+      - ReferralAdminController_createPayout — partner not found
+      - ReferralAdminController_updateRate — partner not found
+      - ReferralAdminController_setAccess — partner not found
+      - ReferralAdminController_reverseEarning — no active earning found
+  - status: 409
+    title: Conflict
+    meaning: Email already registered, or a conflicting account state.
+    remediation: Sign in instead of registering, or recover the existing account.
+    seen_on:
+      - AuthController_registerWithCode
+  - status: 500
+    title: Internal Server Error
+    meaning: Server-side failure.
+    remediation: >-
+      Retry later with backoff. Note that POST /api/v1/validate/bulk accepts an
+      idempotency_key, so a retried bulk submission will not create a duplicate task or
+      double-charge; POST /api/v1/validate/single has no such protection.
+
+validation_outcome_codes:
+  note: >-
+    Distinct from API errors. These describe the outcome of checking one address and appear
+    in a task's results, not in an error body.
+  envelope_field: validation_result
+  values:
+    - code: good
+      meaning: The mailbox exists and accepts mail; safe to send to.
+    - code: bad
+      meaning: The mailbox does not exist, is disabled, or the domain does not accept mail.
+  detail_field: result
+  detail_values_documented:
+    - mailbox_not_found
+    - domain_not_found
+    - smtp_rejected
+  detail_note: >-
+    The OpenAPI says "and others" — the full enumeration of `result` reasons is not
+    published, so a consumer cannot exhaustively branch on it.
+  discrepancy: >-
+    The published OpenAPI documents a BINARY good/bad outcome. The marketing site and the
+    dashboard describe a wider taxonomy — Good / Bad / Risk archives, and a five-way read
+    (deliverable, undeliverable, catch-all, disposable, role-based) with a separate
+    "unknown" bucket. The contract and the product description do not agree on the result
+    model; an integrator building against the spec should expect only good|bad.
+
+task_failure:
+  state: failed
+  code: -1
+  remediation: Contact support@uchecker.net quoting the task_id.

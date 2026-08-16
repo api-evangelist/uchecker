@@ -1,0 +1,80 @@
+generated: '2026-08-16'
+method: searched
+source: >-
+  https://api.uchecker.net/docs/openapi.json — info.description, section "Лимиты и
+  тарификация"; plus a live unauthenticated probe of POST /api/v1/validate/single
+docs: https://api.uchecker.net/docs
+name: uChecker rate limits
+limit_count: 0
+limits: []
+provider_statement:
+  ru: "Rate limits отсутствуют — вы можете отправлять запросы с любой частотой."
+  en: "There are no rate limits — you may send requests at any frequency."
+  location: info.description, "Лимиты и тарификация"
+note: >-
+  limit_count is ZERO because uChecker explicitly states it enforces NO request-rate limit.
+  This is a documented policy, not an undocumented gap: throughput is governed by the
+  prepaid credit balance instead of by a request-per-window ceiling. Exhaustion therefore
+  surfaces as HTTP 403 ("insufficient credits"), never as 429.
+
+response_headers:
+  observed: []
+  probe:
+    url: https://api.uchecker.net/api/v1/validate/single
+    method: POST
+    http_status: 401
+    headers_returned:
+      - access-control-allow-credentials
+      - content-type
+      - date
+      - etag
+      - vary
+      - x-powered-by
+    verdict: >-
+      No RateLimit-*, X-RateLimit-*, Retry-After or Retry-* header on a live response. An
+      agent gets NO runtime budget signal from this API — it cannot discover remaining
+      capacity from headers and must call GET /api/v1/account/balance to learn how many
+      credits are left.
+  status_on_exhaustion: null
+
+quota:
+  mechanism: prepaid credits
+  unit: 1 email = 1 credit
+  charged_at: enqueue time
+  not_charged: syntactically invalid addresses in a bulk submission
+  balance_endpoint: GET /api/v1/account/balance
+  exhaustion_status: 403
+  exhaustion_body: '{ "success": false, "error": "<russian text>" }'
+  see_also: plans/uchecker-plans-pricing.yml
+
+payload_ceilings:
+  - scope: POST /api/v1/validate/bulk (REST)
+    limit: not documented in the contract
+    note: >-
+      The marketing site quotes up to 9,000,000 addresses per job; the OpenAPI declares no
+      maxItems on BulkValidationDto.emails.
+  - scope: validate_emails (MCP tool)
+    limit: 10000 addresses per call
+    source: https://uchecker.net/en/mcp
+  - scope: GET /api/v1/tasks (and other paginated lists)
+    limit: 100 records per page (limit parameter, min 1, max 100, default 10)
+
+throughput:
+  published_rate: ~3200 addresses per minute
+  source: https://uchecker.net/en
+  note: A performance claim, not a contractual limit or an SLA.
+
+downstream_constraints:
+  note: >-
+    uChecker's own MCP page acknowledges that an SMTP check is a live conversation with the
+    RECIPIENT's mail server, and that large providers apply greylisting and per-source rate
+    limits — so some answers arrive late or come back indeterminate. The effective rate
+    limit on this product is imposed by third-party mail servers, not by uChecker, and it
+    is the reason validation belongs in a background task rather than a synchronous call.
+
+gaps_for_the_provider:
+  - >-
+    Emit RateLimit-* (RFC 9331-style) or at minimum an X-Credits-Remaining header so an
+    agent can read its remaining budget from the response instead of polling a balance
+    endpoint.
+  - Publish a documented maxItems for bulk submissions.

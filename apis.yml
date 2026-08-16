@@ -4,6 +4,7 @@ description: >-
   MX/DNS, catch-all, disposable, role-based, spam-trap/blacklist checks) plus free DNS/email tools. Access via REST API,
   a hosted MCP server, web dashboard, and Telegram bot.
 url: https://uchecker.apievangelist.com/apis.yml
+image: https://uchecker.net/images/og-image.png
 created: '2026-08-16'
 modified: '2026-08-16'
 specificationVersion: '0.21'
@@ -21,39 +22,121 @@ tags:
   - agent-native
   - data-quality
 apis:
-  - name: UChecker API
-    description: >-
-      REST API for asynchronous single and bulk email validation, task management, billing, account stats, ESP
-      provisioning, and referral modules. Auth via x-api-key header or Bearer JWT. Credit-metered (1 email = 1 credit).
-    humanURL: https://api.uchecker.net/docs
-    baseURL: https://api.uchecker.net
-    tags:
-      - email-verification
-      - email
-      - smtp
-      - dns
-      - deliverability
-      - mx
-      - spf
-      - dkim
-      - dmarc
-      - mcp
-      - agent-native
-      - data-quality
-    properties:
-      - type: OpenAPI
-        url: https://api.uchecker.net/docs/openapi.json
-      - type: Documentation
-        url: https://api.uchecker.net/docs
-      - type: MCPServer
-        url: https://api.uchecker.net/mcp
-      - type: Documentation
-        url: https://uchecker.net/mcp
+- aid: uchecker:uchecker-default-api
+  name: uChecker Аутентификация API
+  description: Вход, регистрация, управление JWT-токенами и API ключами, привязка Telegram
+  humanURL: https://api.uchecker.net/docs
+  baseURL: https://api.uchecker.net
+  tags:
+  - Аутентификация
+  properties:
+  - type: OpenAPI
+    url: openapi/uchecker-default-api-openapi.yml
+  - type: Overlay
+    url: overlays/uchecker-default-api-overlay.yaml
+  - type: Documentation
+    url: https://api.uchecker.net/docs
+  - type: Documentation
+    url: https://uchecker.net/mcp
+- aid: uchecker:uchecker-email-api
+  name: uChecker Валидация Email API
+  description: >-
+    Проверка email-адресов, управление задачами валидации, получение и скачивание результатов
+  humanURL: https://api.uchecker.net/docs
+  baseURL: https://api.uchecker.net
+  tags:
+  - Валидация Email
+  properties:
+  - type: OpenAPI
+    url: openapi/uchecker-email-api-openapi.yml
+  - type: Overlay
+    url: overlays/uchecker-email-api-overlay.yaml
+  - type: Documentation
+    url: https://api.uchecker.net/docs
+  - type: Documentation
+    url: https://uchecker.net/mcp
+- aid: uchecker:uchecker-esp-api
+  name: uChecker ESP Провайдеры API
+  description: >-
+    Программный интерфейс для ESP-провайдеров: расчёт стоимости и автоматическое создание аккаунтов с
+    зачислением кредитов
+  humanURL: https://api.uchecker.net/docs
+  baseURL: https://api.uchecker.net
+  tags:
+  - ESP Провайдеры
+  properties:
+  - type: OpenAPI
+    url: openapi/uchecker-esp-api-openapi.yml
+  - type: Overlay
+    url: overlays/uchecker-esp-api-overlay.yaml
+  - type: Documentation
+    url: https://api.uchecker.net/docs
+  - type: Documentation
+    url: https://uchecker.net/mcp
 maintainers:
   - FN: uChecker
+    email: support@uchecker.net
     url: https://uchecker.net
 generated:
   by: apis.io/add
   model: claude-opus-4-8
   confidence: 95
   at: '2026-08-16T17:52:03.735Z'
+common:
+- type: DomainSecurity
+  url: security/uchecker-domain-security.yml
+- type: Authentication
+  url: authentication/uchecker-authentication.yml
+- type: MCPServer
+  url: https://api.uchecker.net/mcp
+- type: MCPServer
+  url: mcp/uchecker-mcp.yml
+- type: ToolCrosswalk
+  url: mcp/uchecker-tool-crosswalk.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: LLMsTxt
+  url: llms/uchecker-llms.txt
+- type: Conventions
+  url: conventions/uchecker-conventions.yml
+- type: Idempotency
+  url: conventions/uchecker-conventions.yml
+- type: ErrorCatalog
+  url: errors/uchecker-problem-types.yml
+- type: Webhooks
+  url: asyncapi/uchecker-webhooks.yml
+- type: DataModel
+  url: data-model/uchecker-data-model.yml
+- type: Conformance
+  url: conformance/uchecker-conformance.yml
+- type: Lifecycle
+  url: lifecycle/uchecker-lifecycle.yml
+- type: RateLimits
+  url: rate-limits/uchecker-rate-limits.yml
+- type: Plans
+  url: plans/uchecker-plans-pricing.yml
+- type: Packages
+  url: packages/uchecker-packages.yml
+- type: Console
+  url: https://api.uchecker.net/docs
+- type: APIReference
+  url: https://api.uchecker.net/docs
+- type: Documentation
+  url: https://api.uchecker.net/docs
+- type: Pricing
+  url: https://uchecker.net/en#tariffs
+- type: SignUp
+  url: https://app.uchecker.net
+- type: Support
+  url: https://t.me/goodsam911
+- type: Blog
+  url: https://uchecker.net/blog-en
+- type: TermsOfService
+  url: https://uchecker.net/terms-of-service
+- type: PrivacyPolicy
+  url: https://uchecker.net/privacy-policy
+x-enrichment:
+  date: '2026-08-16'
+  status: enriched
+  artifacts_added: 23
+  pass: local-v1

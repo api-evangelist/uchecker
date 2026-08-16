@@ -1,0 +1,79 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancement overlay for uChecker Аутентификация API
+  version: 1.0.0
+extends: openapi/uchecker-default-api-openapi.yml
+generated: '2026-08-16'
+method: generated
+source: >-
+  openapi/uchecker-default-api-openapi.yml, authentication/uchecker-authentication.yml,
+  conventions/uchecker-conventions.yml, errors/uchecker-problem-types.yml
+rationale: >-
+  This split carries three unrelated surfaces — authentication, billing and the affiliate
+  programme — because uChecker tags them separately but serves them from one contract. The
+  overlay records the token lifetimes and key format that live only in the prose
+  description, marks the affiliate endpoints as conditionally gated (they 403 unless the
+  programme is enabled on the account), and flags the referral admin operations as
+  privileged so an agent does not treat them as ordinary account operations. The original
+  spec is not mutated.
+actions:
+  - target: $.info
+    description: Attach the cross-cutting artifact map and the auth facts held in prose.
+    update:
+      x-api-evangelist:
+        authentication: authentication/uchecker-authentication.yml
+        conventions: conventions/uchecker-conventions.yml
+        errors: errors/uchecker-problem-types.yml
+        lifecycle: lifecycle/uchecker-lifecycle.yml
+      x-auth:
+        schemes:
+          - type: apiKey
+            header: x-api-key
+            key_prefix: uk_
+            expiry: none
+            rotate_operation: AuthController_resetApiKey
+          - type: http-bearer
+            format: JWT
+            access_token_ttl_seconds: 3600
+            refresh_token_ttl_days: 7
+            refresh_operation: AuthController_refresh
+        equivalent: true
+        note: >-
+          Both schemes grant full access to every endpoint. The provider recommends the API
+          key for server-side integrations and the JWT for front-end applications.
+      x-versioning:
+        scheme: uri-path
+        current: v1
+        exception: >-
+          The /auth/* endpoints carry NO version prefix, so the authentication surface
+          versions independently of /api/v1.
+  - target: $.paths['/auth/reset-api-key'].post
+    description: Mark credential rotation as a destructive, non-idempotent operation.
+    update:
+      x-privileged: true
+      x-destructive: true
+      x-agent-guidance: >-
+        Rotating the API key immediately invalidates the existing key. Never call this from
+        an agent workflow — it will break every other integration on the account, including
+        the MCP server connection.
+  - target: $.paths['/api/v1/referral/stats'].get
+    description: Record the conditional gate on the affiliate surface.
+    update:
+      x-conditional-access:
+        gate: affiliate programme must be enabled on the account
+        status_when_closed: 403
+  - target: $.paths['/api/v1/referral/admin/payouts'].post
+    description: Mark the referral admin surface as privileged.
+    update:
+      x-privileged: true
+      x-agent-guidance: >-
+        Administrative payout creation. Not part of the customer-facing surface and not
+        exposed as an MCP tool; do not call it from an agent.
+  - target: $.components.schemas.ErrorResponse
+    description: State plainly that no machine-readable error code exists.
+    update:
+      x-error-semantics:
+        rfc9457: false
+        machine_readable_code: false
+        branch_on: HTTP status code
+        message_language: ru

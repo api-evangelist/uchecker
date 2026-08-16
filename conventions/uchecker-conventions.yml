@@ -1,0 +1,193 @@
+generated: '2026-08-16'
+method: searched
+source: >-
+  https://api.uchecker.net/docs/openapi.json (info.description — the published integration
+  guide), https://uchecker.net/en/mcp
+docs: https://api.uchecker.net/docs
+name: uChecker API conventions
+summary: >-
+  A credit-metered, asynchronous validation API. Every validation request creates a task
+  and returns immediately; results are collected by polling the task or by receiving a
+  webhook. Authentication is an interchangeable API key or JWT. Idempotency is supported on
+  bulk submission via a caller-supplied key. The provider states explicitly that there are
+  no rate limits.
+
+authentication:
+  styles:
+    - type: apiKey
+      header: x-api-key
+      key_prefix: uk_
+      expiry: none — valid until manually reset via POST /auth/reset-api-key
+      recommended_for: server-side integrations
+    - type: http-bearer
+      header: Authorization
+      format: JWT
+      access_token_ttl: 1 hour
+      refresh_token_ttl: 7 days
+      refresh_operation: POST /auth/refresh
+      recommended_for: front-end applications
+  note: >-
+    The two schemes are described by the provider as equivalent — either grants full access
+    to every endpoint. The ESP endpoints (/api/v1/esp/*) are gated behind a separate ESP
+    provider token.
+  see_also: authentication/uchecker-authentication.yml
+
+idempotency:
+  supported: true
+  mechanism: request-body field
+  field: idempotency_key
+  header: null
+  scope: POST /api/v1/validate/bulk (BulkValidationDto)
+  format: caller-supplied unique string; the published example is "import-2024-01-15-batch-3" and the field description suggests a UUID
+  behavior: >-
+    "Ключ идемпотентности. Уникальная строка (например, UUID), предотвращающая создание
+    дублирующих задач при повторных запросах. Если задача с таким ключом уже существует —
+    вернётся её текущий статус вместо создания новой." — a repeat submission carrying a key
+    that already exists returns the CURRENT STATUS of the existing task instead of creating
+    a new one and re-charging credits.
+  retention: not documented
+  gaps:
+    - >-
+      POST /api/v1/validate/single has NO idempotency_key field — only the bulk endpoint is
+      protected, so a retried single-address validation can double-charge a credit.
+    - >-
+      Retention window for a used key is not published, so a caller cannot tell how long a
+      key remains deduplicating.
+    - >-
+      There is no Idempotency-Key HTTP header; the key travels in the JSON body, which means
+      it cannot be applied by a generic retrying HTTP client or proxy.
+  evidence: openapi/_original/uchecker-openapi.json — components.schemas.BulkValidationDto.properties.idempotency_key
+
+pagination:
+  style: page-number
+  request_params:
+    - name: page
+      in: query
+      default: 1
+      note: 1-based
+    - name: limit
+      in: query
+      default: 10
+      min: 1
+      max: 100
+  response_envelope: pagination
+  response_fields:
+    - page
+    - limit
+    - total
+    - totalPages
+  totalPages_formula: Math.ceil(total / limit)
+  applies_to:
+    - ValidationController_getTasks (GET /api/v1/tasks)
+    - BillingController_getPaymentHistory (GET /api/v1/billing/history)
+    - ReferralController_getReferrals
+    - ReferralController_getEarnings
+  cursor_support: false
+  evidence: openapi/_original/uchecker-openapi.json — components.schemas.PaginationInfo
+
+field_expansion:
+  supported: false
+  sparse_fieldsets: false
+  note: >-
+    No expand/fields/include parameters. The only shaping parameter is `format=json|csv` on
+    GET /api/v1/tasks/{taskId}/results.
+
+metadata:
+  user_defined_metadata: false
+  note: >-
+    No customer-defined metadata object on any resource. `idempotency_key` and
+    `websocket_id` are the only caller-supplied correlation fields, and neither is echoed
+    back as metadata.
+
+request_tracing:
+  request_id_header: null
+  correlation_field: >-
+    task_id — the durable identifier for every asynchronous unit of work. Support asks for
+    the task_id when a task reaches the `failed` state.
+  note: >-
+    No X-Request-Id / X-Correlation-Id is documented and none was observed on a live
+    response (the 401 from POST /api/v1/validate/single carried only access-control-allow-credentials,
+    content-type, date, etag, vary and x-powered-by). Tracing an individual HTTP call back to
+    the provider is therefore not possible; only task-level correlation exists.
+
+versioning:
+  scheme: URI path prefix
+  current: v1
+  prefix: /api/v1
+  exceptions:
+    - >-
+      The authentication endpoints are UNVERSIONED — they sit at /auth/* with no /api/v1
+      prefix, so the auth surface and the validation surface version independently (or, more
+      accurately, the auth surface has no version at all).
+  spec_version: 1.0.0 (info.version of the published OpenAPI)
+  media_type_versioning: false
+  header_versioning: false
+  see_also: lifecycle/uchecker-lifecycle.yml
+
+error_envelope:
+  format: custom-json
+  rfc9457: false
+  content_type: application/json
+  shape:
+    success: boolean — always false on an error
+    error: string — human-readable message, RUSSIAN-LANGUAGE
+  quote: >-
+    "Тело ошибки всегда содержит поля `success: false` и `error` с человекочитаемым
+    описанием." (The error body always contains a `success: false` field and an `error`
+    field with a human-readable description.)
+  machine_readable_code: false
+  note: >-
+    There is no stable machine-readable error code — only an HTTP status and a prose string
+    in Russian. An agent must branch on the HTTP status, not on the message. The one place
+    a structured code does appear is `validation_result` / `result` inside a task's RESULTS
+    (mailbox_not_found, domain_not_found, smtp_rejected …), which are outcome codes for a
+    checked address rather than API errors.
+  see_also: errors/uchecker-problem-types.yml
+
+rate_limit_signaling:
+  limits_published: false
+  provider_statement: >-
+    "Rate limits отсутствуют — вы можете отправлять запросы с любой частотой." (There are no
+    rate limits — you may send requests at any frequency.)
+  response_headers: []
+  status_on_exhaustion: null
+  throttle_mechanism: >-
+    Throughput is governed by the credit balance rather than by request rate. Running out of
+    credits returns HTTP 403, not 429. Downstream SMTP greylisting and receiver-side limits
+    are acknowledged by the provider as a source of latency and `unknown` results.
+  see_also: rate-limits/uchecker-rate-limits.yml
+
+metering:
+  model: prepaid credits
+  unit: 1 email checked = 1 credit
+  charged_at: the moment the address is queued, not when the result is returned
+  not_charged: >-
+    Syntactically invalid addresses in a bulk submission are excluded free of charge and
+    returned in the `invalid_details` field of the response.
+  balance_endpoint: GET /api/v1/account/balance
+  exhaustion_status: 403
+  see_also: plans/uchecker-plans-pricing.yml
+
+async_model:
+  pattern: submit-then-poll, with optional push
+  states:
+    - name: pending
+      code: 0
+      meaning: task created, waiting to start
+    - name: processing
+      code: 1
+      meaning: addresses being checked; progress in progress_percent
+    - name: completed
+      code: 3
+      meaning: all addresses checked, results downloadable
+    - name: failed
+      code: -1
+      meaning: error — contact support with the task_id
+  recommended_poll_interval: 5-10 seconds via GET /api/v1/tasks/{taskId}
+  push_alternatives:
+    - webhook_url on task creation (POST with results on completion)
+    - websocket_id for live progress (used by the web dashboard)
+  note: >-
+    State code 2 is not documented — the published enumeration jumps from 1 (processing) to
+    3 (completed).
+  see_also: asyncapi/uchecker-webhooks.yml
