@@ -1,0 +1,59 @@
+name: uChecker
+description: >-
+  Russian-language email-validation platform offering bulk and single email verification (SMTP mailbox existence,
+  MX/DNS, catch-all, disposable, role-based, spam-trap/blacklist checks) plus free DNS/email tools. Access via REST API,
+  a hosted MCP server, web dashboard, and Telegram bot.
+url: https://uchecker.apievangelist.com/apis.yml
+created: '2026-08-16'
+modified: '2026-08-16'
+specificationVersion: '0.21'
+tags:
+  - email-verification
+  - email
+  - smtp
+  - dns
+  - deliverability
+  - mx
+  - spf
+  - dkim
+  - dmarc
+  - mcp
+  - agent-native
+  - data-quality
+apis:
+  - name: UChecker API
+    description: >-
+      REST API for asynchronous single and bulk email validation, task management, billing, account stats, ESP
+      provisioning, and referral modules. Auth via x-api-key header or Bearer JWT. Credit-metered (1 email = 1 credit).
+    humanURL: https://api.uchecker.net/docs
+    baseURL: https://api.uchecker.net
+    tags:
+      - email-verification
+      - email
+      - smtp
+      - dns
+      - deliverability
+      - mx
+      - spf
+      - dkim
+      - dmarc
+      - mcp
+      - agent-native
+      - data-quality
+    properties:
+      - type: OpenAPI
+        url: https://api.uchecker.net/docs/openapi.json
+      - type: Documentation
+        url: https://api.uchecker.net/docs
+      - type: MCPServer
+        url: https://api.uchecker.net/mcp
+      - type: Documentation
+        url: https://uchecker.net/mcp
+maintainers:
+  - FN: uChecker
+    url: https://uchecker.net
+generated:
+  by: apis.io/add
+  model: claude-opus-4-8
+  confidence: 95
+  at: '2026-08-16T17:52:03.735Z'
