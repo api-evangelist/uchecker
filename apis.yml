@@ -7,7 +7,7 @@ url: https://raw.githubusercontent.com/api-evangelist/uchecker/refs/heads/main/a
 image: https://uchecker.net/images/og-image.png
 created: '2026-08-16'
 modified: '2026-08-16'
-specificationVersion: '0.21'
+specificationVersion: '0.23'
 tags:
   - email-verification
   - email
