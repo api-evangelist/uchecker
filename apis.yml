@@ -9,6 +9,19 @@ created: '2026-08-16'
 modified: '2026-08-16'
 specificationVersion: '0.23'
 tags:
+  - Email Verification
+  - Email
+  - SMTP
+  - DNS
+  - Deliverability
+  - mx
+  - SPF
+  - DKIM
+  - DMARC
+  - MCP
+  - agent-native
+  - Data Quality
+tags_raw:
   - email-verification
   - email
   - smtp
@@ -27,7 +40,8 @@ apis:
   description: Вход, регистрация, управление JWT-токенами и API ключами, привязка Telegram
   humanURL: https://api.uchecker.net/docs
   baseURL: https://api.uchecker.net
-  tags:
+  tags: []
+  tags_raw:
   - Аутентификация
   properties:
   - type: OpenAPI
@@ -45,6 +59,8 @@ apis:
   humanURL: https://api.uchecker.net/docs
   baseURL: https://api.uchecker.net
   tags:
+  - Email
+  tags_raw:
   - Валидация Email
   properties:
   - type: OpenAPI
