@@ -4,6 +4,18 @@ description: >-
   MX/DNS, catch-all, disposable, role-based, spam-trap/blacklist checks) plus free DNS/email tools. Access via REST API,
   a hosted MCP server, web dashboard, and Telegram bot.
 url: https://raw.githubusercontent.com/api-evangelist/uchecker/refs/heads/main/apis.yml
+deliveryModel:
+  model: saas
+  open_source: false
+  commercial: true
+  callable_host: true
+  label: Hosted service · you call their endpoint
+  confidence: high
+  source:
+  - openapi
+  - pricing
+  generated: '2026-08-28'
+  method: derived
 image: https://uchecker.net/images/og-image.png
 created: '2026-08-16'
 modified: '2026-08-16'
