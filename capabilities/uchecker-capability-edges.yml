@@ -1,0 +1,26 @@
+slug: uchecker
+provider: uChecker
+generated_by: planning/capability-mapping/scripts/classify_capabilities.py
+model: claude-opus-5
+frame:
+- Telecommunications
+min_confidence: 0.7
+capability_model:
+  source: https://github.com/vincentmakes/turbo-ea-capabilities
+  license: CC-BY-4.0
+  attribution: Turbo EA Capabilities by Vincent Verdet — Turbo EA, https://github.com/vincentmakes/turbo-ea-capabilities,
+    CC BY 4.0
+  notice: NOTICE
+edge_count: 1
+edges:
+- tag: Валидация Email
+  spec_file: uchecker-email-api-openapi.yml
+  capability_id: BC-610.30
+  capability_id_l1: BC-610
+  capability_name: Data Quality Management
+  confidence: 0.72
+  evidence: POST /api/v1/validate/single  Проверить один email-адрес; POST /api/v1/validate/bulk  Массовая
+    проверка email-адресов; GET /api/v1/tasks/{taskId}/analytics
+  reason: Single and bulk verification of email addresses (SMTP/MX existence, returning good/bad) with
+    result analytics — this is contact-data validation and cleansing, i.e. Data Quality Management. Account
+    balance/stats endpoints are ancillary.
