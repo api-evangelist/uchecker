@@ -21,18 +21,18 @@ created: '2026-08-16'
 modified: '2026-08-16'
 specificationVersion: '0.23'
 tags:
-  - Email Verification
+  - email-verification
   - Email
   - SMTP
-  - DNS
-  - Deliverability
+  - dns
+  - deliverability
   - mx
-  - SPF
-  - DKIM
+  - spf
+  - dkim
   - DMARC
   - MCP
   - agent-native
-  - Data Quality
+  - data-quality
 tags_raw:
   - email-verification
   - email
@@ -71,7 +71,7 @@ apis:
   humanURL: https://api.uchecker.net/docs
   baseURL: https://api.uchecker.net
   tags:
-  - Email
+  - Валидация Email
   tags_raw:
   - Валидация Email
   properties:
