@@ -127,6 +127,8 @@ generated:
   confidence: 95
   at: '2026-08-16T17:52:03.735Z'
 common:
+- type: Website
+  url: https://www.uchecker.net/
 - type: CapabilityMap
   url: capabilities/uchecker-capability-edges.yml
   name: uChecker Business Capability Map
