@@ -3,12 +3,12 @@ info:
   title: API Evangelist enhancement overlay for uChecker Аутентификация API
   version: 1.0.0
 extends: openapi/uchecker-default-api-openapi.yml
-generated: '2026-08-16'
-method: generated
-source: >-
+x-generated: '2026-08-16'
+x-method: generated
+x-source: >-
   openapi/uchecker-default-api-openapi.yml, authentication/uchecker-authentication.yml,
   conventions/uchecker-conventions.yml, errors/uchecker-problem-types.yml
-rationale: >-
+x-rationale: >-
   This split carries three unrelated surfaces — authentication, billing and the affiliate
   programme — because uChecker tags them separately but serves them from one contract. The
   overlay records the token lifetimes and key format that live only in the prose

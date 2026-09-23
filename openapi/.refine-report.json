@@ -1,23 +1,26 @@
 {
   "provider": "uchecker",
   "sources": [
-    "uchecker-openapi.json"
+    "_original/uchecker-openapi.json"
   ],
   "outputs": [
     "uchecker-esp-api-openapi.yml",
     "uchecker-default-api-openapi.yml",
     "uchecker-email-api-openapi.yml"
   ],
-  "archived": [
-    "archived openapi/uchecker-openapi.json"
-  ],
+  "archived": [],
   "errors": [],
   "warnings": [],
   "notes": [
+    "sourced from openapi/_original/ (1 archived document(s)); previously refined output at the top level was skipped rather than re-split",
     "uchecker-openapi.json: upgraded openapi 3.0.0 -> OpenAPI 3.2.0",
     "uchecker-openapi.json: declared missing tag: \u041f\u0430\u0440\u0442\u043d\u0451\u0440\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430",
     "uchecker-openapi.json: declared missing tag: \u041f\u0430\u0440\u0442\u043d\u0451\u0440\u0441\u043a\u0430\u044f \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0430 \u2014 \u0430\u0434\u043c\u0438\u043d\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435",
-    "apis.yml register: written (+3 apis, 3 total)"
+    "apis.yml register: already-registered"
   ],
-  "skipped": []
+  "skipped": [
+    "uchecker-default-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "uchecker-email-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "uchecker-esp-api-openapi.yml: previously refined output, superseded by openapi/_original/"
+  ]
 }

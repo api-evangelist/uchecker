@@ -3,13 +3,13 @@ info:
   title: API Evangelist enhancement overlay for uChecker Валидация Email API
   version: 1.0.0
 extends: openapi/uchecker-email-api-openapi.yml
-generated: '2026-08-16'
-method: generated
-source: >-
+x-generated: '2026-08-16'
+x-method: generated
+x-source: >-
   openapi/uchecker-email-api-openapi.yml, conventions/uchecker-conventions.yml,
   errors/uchecker-problem-types.yml, asyncapi/uchecker-webhooks.yml,
   rate-limits/uchecker-rate-limits.yml, mcp/uchecker-tool-crosswalk.yml
-rationale: >-
+x-rationale: >-
   uChecker's published contract carries its integration guidance in one large Russian-language
   info.description blob: the credit model, the "no rate limits" statement, the task lifecycle,
   the error envelope and the polling advice are all prose. None of it is attached to the

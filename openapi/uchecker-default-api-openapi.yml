@@ -1,7 +1,10 @@
 openapi: 3.2.0
 info:
   title: UChecker Аутентификация API
-  description: "\n## О сервисе\n\nUChecker — платформа валидации email-адресов для маркетологов, ESP-провайдеров и разработчиков. Проверяйте email поштучно или массово — до миллионов адресов за одну задачу. API определяет существование почтового ящика на уровне SMTP, DNS/MX и провайдера, возвращая однозначный результат: `good` или `bad`.\n\nБазовый URL: `https://api.uchecker.net`\n\n---\n\n## Быстрый старт\n\n**Шаг 1.** Получите API ключ — он доступен в [личном кабинете](https://app.uchecker.net) сразу после регистрации.\n\n**Шаг 2.** Отправьте запрос на валидацию:\n```bash\ncurl -X POST https://api.uchecker.net/api/v1/validate/single \\\n  -H \"x-api-key: ваш_ключ\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\": \"user@example.com\"}'\n```\n\n**Шаг 3.** Получите результат по `task_id` из ответа:\n```bash\ncurl https://api.uchecker.net/api/v1/tasks/123/results \\\n  -H \"x-api-key: ваш_ключ\"\n```\n\n---\n\n## Аутентификация\n\nAPI поддерживает два равноценных способа аутентификации. Используйте любой из них — оба дают полный доступ ко всем эндпоинтам.\n\n### API Key (рекомендуется для интеграций)\n\nПередайте ключ в заголовке `x-api-key`. Ключ не истекает и действует до ручного сброса.\n\n```\nx-api-key: uk_xxxxxxxxxxxxx\n```\n\n### Bearer Token (рекомендуется для фронтенд-приложений)\n\nПолучите JWT через `POST /auth/login`, передайте в заголовке `Authorization`.\n\n```\nAuthorization: Bearer eyJhbGciOiJIUzI1NiIs...\n```\n\n| Токен | Время жизни | Назначение |\n|-------|-------------|------------|\n| access_token | 1 час | Аутентификация запросов |\n| refresh_token | 7 дней | Обновление access_token через `POST /auth/refresh` |\n\n> **Совет:** при серверной интеграции используйте API Key — это проще и не требует управления токенами.\n\n---\n\n## Лимиты и тарификация\n\nUChecker работает по кредитной модели. Каждая проверка одного email-адреса списывает **1 кредит** с вашего баланса.\n\n- **Rate limits отсутствуют** — вы можете отправлять запросы с любой частотой.\n- Кредиты списываются в момент постановки email в очередь.\n- Email с невалидным синтаксисом (при массовой отправке) **не тарифицируются** и возвращаются в поле `invalid_details`.\n- Текущий баланс доступен через `GET /api/v1/account/balance`.\n\n---\n\n## Результаты валидации\n\nКаждый email получает одно из двух значений `validation_result`:\n\n| Результат | Описание |\n|-----------|----------|\n| `good` | Почтовый ящик существует и принимает почту. Адрес безопасен для рассылки. |\n| `bad` | Почтовый ящик не существует, отключён, или домен не принимает почту. |\n\nДля адресов со статусом `bad` в поле `result` указывается детальная причина: `mailbox_not_found`, `domain_not_found`, `smtp_rejected` и другие.\n\n---\n\n## Жизненный цикл задачи\n\nКаждый запрос на валидацию создаёт задачу (task), которая проходит через состояния:\n\n```\npending → processing → completed\n                    ↘ failed\n```\n\n| Состояние | Код | Описание |\n|-----------|-----|----------|\n| `pending` | 0 | Задача создана, ожидает начала обработки |\n| `processing` | 1 | Email-адреса проверяются. Прогресс доступен в поле `progress_percent` |\n| `completed` | 3 | Все адреса проверены. Результаты доступны для скачивания |\n| `failed` | -1 | Произошла ошибка. Обратитесь в поддержку с `task_id` |\n\n**Рекомендуемый polling-интервал:** каждые 5–10 секунд через `GET /api/v1/tasks/:taskId`. Или укажите `webhook_url` при создании задачи — мы отправим POST-запрос с результатами, когда задача завершится.\n\n---\n\n## Обработка ошибок\n\nAPI возвращает стандартные HTTP-коды и JSON-ответы:\n\n| Код | Значение | Когда возникает |\n|-----|----------|-----------------|\n| 200 | Успех | Запрос выполнен |\n| 400 | Ошибка запроса | Невалидные параметры, неверный формат данных |\n| 401 | Не авторизован | Отсутствует или неверный API ключ / JWT токен |\n| 403 | Доступ запрещён | Недостаточно кредитов на балансе |\n| 404 | Не найдено | Задача не существует или не принадлежит вашему аккаунту |\n| 500 | Внутренняя ошибка | Ошибка сервера — повторите запрос позже |\n\nТело ошибки всегда содержит поля `success: false` и `error` с человекочитаемым описанием.\n\n---\n\n## Поддержка\n\nПо вопросам интеграции и техническим вопросам: **support@uchecker.net**\n    "
+  description: '## О сервисе
+
+
+    UChecker — платформа валидации email-адресов для маркетологов, ESP-провайдеров и разработчиков.'
   version: 1.0.0
   contact: {}
 servers:
@@ -18,7 +21,7 @@ paths:
 
         **Что возвращается:**
 
-        - `access_token` — JWT токен для аутентификации запросов (время жизни: **1 час**). Передавайте в заголовке `Authorization: Bearer <token>`.
+        - `access_token` — JWT токен для аутентификации запросов (время жизни: **1 час**). Передавайте в заголовке `Authorization: Bearer `.
 
         - `refresh_token` — токен для обновления access_token (время жизни: **7 дней**). Используйте `POST /auth/refresh`.
 
@@ -217,7 +220,7 @@ paths:
 
         **Важные моменты:**
 
-        - Требуется JWT аутентификация (`Authorization: Bearer <token>`). API ключ нельзя использовать для его собственного сброса.
+        - Требуется JWT аутентификация (`Authorization: Bearer `). API ключ нельзя использовать для его собственного сброса.
 
         - Новый ключ возвращается в ответе **один раз**. Сохраните его — в дальнейшем он отображается только в маскированном виде.
 
@@ -610,7 +613,7 @@ paths:
           description: Партнёрская программа не включена для аккаунта.
       security:
       - bearer: []
-      summary: Список приведённых пользователей. Email маскируется.
+      summary: Список приведённых пользователей. Email маскируется
       tags:
       - Аутентификация
   /api/v1/referral/earnings:
@@ -734,15 +737,6 @@ paths:
       - Аутентификация
 components:
   schemas:
-    ForgotPasswordDto:
-      type: object
-      properties:
-        email:
-          type: string
-          example: user@example.com
-          description: Email-адрес аккаунта. Если email зарегистрирован, на него будет отправлена ссылка для сброса пароля.
-      required:
-      - email
     LoginResponse:
       type: object
       properties:
@@ -767,20 +761,56 @@ components:
       - api_key
       - access_token
       - refresh_token
-    UnauthorizedResponse:
+    RefreshTokenResponse:
       type: object
       properties:
-        statusCode:
-          type: number
-          example: 401
-          description: HTTP-код ошибки
-        message:
+        access_token:
           type: string
-          example: Не авторизован
-          description: API ключ или JWT токен отсутствует, невалиден или просрочен. Проверьте заголовки `x-api-key` или `Authorization`.
+          example: eyJhbGciOiJIUzI1NiIs...
+          description: 'Новый JWT access token. Время жизни: 1 час.'
+        refresh_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIs...
+          description: 'Новый JWT refresh token. Время жизни: 7 дней. Предыдущий refresh token аннулирован.'
       required:
-      - statusCode
-      - message
+      - access_token
+      - refresh_token
+    InitiateLinkDto:
+      type: object
+      properties:
+        telegram_code:
+          type: number
+          example: 123456
+          description: 6-значный числовой код, полученный от Telegram-бота UChecker командой `/link`
+      required:
+      - telegram_code
+    RegisterWithCodeDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: user@example.com
+          description: Email-адрес для нового веб-аккаунта. Должен быть уникальным.
+        password:
+          type: string
+          example: password123
+          description: Пароль для нового аккаунта. Минимум 6 символов.
+        telegram_code:
+          type: number
+          example: 123456
+          description: 6-значный код из Telegram-бота для привязки существующего бот-аккаунта к новому веб-аккаунту. Если не указан — создаётся обычный аккаунт без привязки к Telegram.
+      required:
+      - email
+      - password
+    RefreshTokenDto:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          description: Действующий refresh token, полученный при входе или предыдущем обновлении. Каждый refresh token можно использовать только один раз.
+          example: eyJhbGciOiJIUzI1NiIs...
+      required:
+      - refresh_token
     ConfirmLinkDto:
       type: object
       properties:
@@ -800,75 +830,29 @@ components:
       - request_id
       - chat_id
       - confirmed
-    ResetApiKeyResponse:
+    ForgotPasswordDto:
       type: object
       properties:
+        email:
+          type: string
+          example: user@example.com
+          description: Email-адрес аккаунта. Если email зарегистрирован, на него будет отправлена ссылка для сброса пароля.
+      required:
+      - email
+    UnauthorizedResponse:
+      type: object
+      properties:
+        statusCode:
+          type: number
+          example: 401
+          description: HTTP-код ошибки
         message:
           type: string
-          example: API ключ успешно сброшен
-          description: Подтверждение операции
-        api_key:
-          type: string
-          example: uk_new_xxxxxxxxxxxxx
-          description: Новый API ключ. Сохраните его — в дальнейшем он отображается только в маскированном виде.
+          example: Не авторизован
+          description: API ключ или JWT токен отсутствует, невалиден или просрочен. Проверьте заголовки `x-api-key` или `Authorization`.
       required:
+      - statusCode
       - message
-      - api_key
-    RefreshTokenResponse:
-      type: object
-      properties:
-        access_token:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIs...
-          description: 'Новый JWT access token. Время жизни: 1 час.'
-        refresh_token:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIs...
-          description: 'Новый JWT refresh token. Время жизни: 7 дней. Предыдущий refresh token аннулирован.'
-      required:
-      - access_token
-      - refresh_token
-    RegisterWithCodeDto:
-      type: object
-      properties:
-        email:
-          type: string
-          example: user@example.com
-          description: Email-адрес для нового веб-аккаунта. Должен быть уникальным.
-        password:
-          type: string
-          example: password123
-          description: Пароль для нового аккаунта. Минимум 6 символов.
-        telegram_code:
-          type: number
-          example: 123456
-          description: 6-значный код из Telegram-бота для привязки существующего бот-аккаунта к новому веб-аккаунту. Если не указан — создаётся обычный аккаунт без привязки к Telegram.
-      required:
-      - email
-      - password
-    LoginDto:
-      type: object
-      properties:
-        email:
-          type: string
-          example: user@example.com
-          description: Email-адрес, указанный при регистрации
-        password:
-          type: string
-          example: password123
-          description: Пароль аккаунта
-      required:
-      - email
-      - password
-    InitiateLinkDto:
-      type: object
-      properties:
-        telegram_code:
-          type: number
-          example: 123456
-          description: 6-значный числовой код, полученный от Telegram-бота UChecker командой `/link`
-      required:
-      - telegram_code
     UserInfo:
       type: object
       properties:
@@ -887,15 +871,6 @@ components:
       required:
       - id
       - email
-    RefreshTokenDto:
-      type: object
-      properties:
-        refresh_token:
-          type: string
-          description: Действующий refresh token, полученный при входе или предыдущем обновлении. Каждый refresh token можно использовать только один раз.
-          example: eyJhbGciOiJIUzI1NiIs...
-      required:
-      - refresh_token
     ResetPasswordDto:
       type: object
       properties:
@@ -909,6 +884,34 @@ components:
           description: Новый пароль. Минимум 6 символов.
       required:
       - token
+      - password
+    ResetApiKeyResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: API ключ успешно сброшен
+          description: Подтверждение операции
+        api_key:
+          type: string
+          example: uk_new_xxxxxxxxxxxxx
+          description: Новый API ключ. Сохраните его — в дальнейшем он отображается только в маскированном виде.
+      required:
+      - message
+      - api_key
+    LoginDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: user@example.com
+          description: Email-адрес, указанный при регистрации
+        password:
+          type: string
+          example: password123
+          description: Пароль аккаунта
+      required:
+      - email
       - password
     PaginationInfo:
       type: object
@@ -934,21 +937,6 @@ components:
       - limit
       - total
       - totalPages
-    PaymentHistoryResponse:
-      type: object
-      properties:
-        data:
-          description: Массив транзакций. Отсортирован по дате — новые первыми.
-          type: array
-          items:
-            $ref: '#/components/schemas/PaymentHistoryItem'
-        pagination:
-          description: Метаданные пагинации
-          allOf:
-          - $ref: '#/components/schemas/PaginationInfo'
-      required:
-      - data
-      - pagination
     PaymentHistoryItem:
       type: object
       properties:
@@ -989,6 +977,21 @@ components:
       - product_details
       - creation_date
       - payment_id
+    PaymentHistoryResponse:
+      type: object
+      properties:
+        data:
+          description: Массив транзакций. Отсортирован по дате — новые первыми.
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentHistoryItem'
+        pagination:
+          description: Метаданные пагинации
+          allOf:
+          - $ref: '#/components/schemas/PaginationInfo'
+      required:
+      - data
+      - pagination
     TrackClickDto:
       type: object
       properties:
@@ -1015,6 +1018,20 @@ components:
           description: Путь посадочной страницы
         referer:
           type: string
+    SetReferralAccessDto:
+      type: object
+      properties:
+        partner_pk:
+          type: number
+          example: 42
+          description: account_pk партнёра
+        enabled:
+          type: boolean
+          example: true
+          description: Показывать ли аккаунту партнёрский раздел. По умолчанию выключено у всех.
+      required:
+      - partner_pk
+      - enabled
     CreatePayoutDto:
       type: object
       properties:
@@ -1037,20 +1054,6 @@ components:
       - partner_pk
       - amount
       - external_id
-    SetReferralAccessDto:
-      type: object
-      properties:
-        partner_pk:
-          type: number
-          example: 42
-          description: account_pk партнёра
-        enabled:
-          type: boolean
-          example: true
-          description: Показывать ли аккаунту партнёрский раздел. По умолчанию выключено у всех.
-      required:
-      - partner_pk
-      - enabled
     UpdateRateDto:
       type: object
       properties:

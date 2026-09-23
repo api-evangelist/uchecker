@@ -3,12 +3,12 @@ info:
   title: API Evangelist enhancement overlay for uChecker ESP Провайдеры API
   version: 1.0.0
 extends: openapi/uchecker-esp-api-openapi.yml
-generated: '2026-08-16'
-method: generated
-source: >-
+x-generated: '2026-08-16'
+x-method: generated
+x-source: >-
   openapi/uchecker-esp-api-openapi.yml, authentication/uchecker-authentication.yml,
   errors/uchecker-problem-types.yml, plans/uchecker-plans-pricing.yml
-rationale: >-
+x-rationale: >-
   The two-operation ESP surface is uChecker's white-label channel: an email service provider
   prices a volume and provisions a downstream uChecker account with credits, on behalf of its
   own customer. It is authenticated differently from the rest of the API — with an ESP

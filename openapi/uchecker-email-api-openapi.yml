@@ -1,14 +1,17 @@
 openapi: 3.2.0
 info:
   title: UChecker Валидация Email API
-  description: "\n## О сервисе\n\nUChecker — платформа валидации email-адресов для маркетологов, ESP-провайдеров и разработчиков. Проверяйте email поштучно или массово — до миллионов адресов за одну задачу. API определяет существование почтового ящика на уровне SMTP, DNS/MX и провайдера, возвращая однозначный результат: `good` или `bad`.\n\nБазовый URL: `https://api.uchecker.net`\n\n---\n\n## Быстрый старт\n\n**Шаг 1.** Получите API ключ — он доступен в [личном кабинете](https://app.uchecker.net) сразу после регистрации.\n\n**Шаг 2.** Отправьте запрос на валидацию:\n```bash\ncurl -X POST https://api.uchecker.net/api/v1/validate/single \\\n  -H \"x-api-key: ваш_ключ\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\": \"user@example.com\"}'\n```\n\n**Шаг 3.** Получите результат по `task_id` из ответа:\n```bash\ncurl https://api.uchecker.net/api/v1/tasks/123/results \\\n  -H \"x-api-key: ваш_ключ\"\n```\n\n---\n\n## Аутентификация\n\nAPI поддерживает два равноценных способа аутентификации. Используйте любой из них — оба дают полный доступ ко всем эндпоинтам.\n\n### API Key (рекомендуется для интеграций)\n\nПередайте ключ в заголовке `x-api-key`. Ключ не истекает и действует до ручного сброса.\n\n```\nx-api-key: uk_xxxxxxxxxxxxx\n```\n\n### Bearer Token (рекомендуется для фронтенд-приложений)\n\nПолучите JWT через `POST /auth/login`, передайте в заголовке `Authorization`.\n\n```\nAuthorization: Bearer eyJhbGciOiJIUzI1NiIs...\n```\n\n| Токен | Время жизни | Назначение |\n|-------|-------------|------------|\n| access_token | 1 час | Аутентификация запросов |\n| refresh_token | 7 дней | Обновление access_token через `POST /auth/refresh` |\n\n> **Совет:** при серверной интеграции используйте API Key — это проще и не требует управления токенами.\n\n---\n\n## Лимиты и тарификация\n\nUChecker работает по кредитной модели. Каждая проверка одного email-адреса списывает **1 кредит** с вашего баланса.\n\n- **Rate limits отсутствуют** — вы можете отправлять запросы с любой частотой.\n- Кредиты списываются в момент постановки email в очередь.\n- Email с невалидным синтаксисом (при массовой отправке) **не тарифицируются** и возвращаются в поле `invalid_details`.\n- Текущий баланс доступен через `GET /api/v1/account/balance`.\n\n---\n\n## Результаты валидации\n\nКаждый email получает одно из двух значений `validation_result`:\n\n| Результат | Описание |\n|-----------|----------|\n| `good` | Почтовый ящик существует и принимает почту. Адрес безопасен для рассылки. |\n| `bad` | Почтовый ящик не существует, отключён, или домен не принимает почту. |\n\nДля адресов со статусом `bad` в поле `result` указывается детальная причина: `mailbox_not_found`, `domain_not_found`, `smtp_rejected` и другие.\n\n---\n\n## Жизненный цикл задачи\n\nКаждый запрос на валидацию создаёт задачу (task), которая проходит через состояния:\n\n```\npending → processing → completed\n                    ↘ failed\n```\n\n| Состояние | Код | Описание |\n|-----------|-----|----------|\n| `pending` | 0 | Задача создана, ожидает начала обработки |\n| `processing` | 1 | Email-адреса проверяются. Прогресс доступен в поле `progress_percent` |\n| `completed` | 3 | Все адреса проверены. Результаты доступны для скачивания |\n| `failed` | -1 | Произошла ошибка. Обратитесь в поддержку с `task_id` |\n\n**Рекомендуемый polling-интервал:** каждые 5–10 секунд через `GET /api/v1/tasks/:taskId`. Или укажите `webhook_url` при создании задачи — мы отправим POST-запрос с результатами, когда задача завершится.\n\n---\n\n## Обработка ошибок\n\nAPI возвращает стандартные HTTP-коды и JSON-ответы:\n\n| Код | Значение | Когда возникает |\n|-----|----------|-----------------|\n| 200 | Успех | Запрос выполнен |\n| 400 | Ошибка запроса | Невалидные параметры, неверный формат данных |\n| 401 | Не авторизован | Отсутствует или неверный API ключ / JWT токен |\n| 403 | Доступ запрещён | Недостаточно кредитов на балансе |\n| 404 | Не найдено | Задача не существует или не принадлежит вашему аккаунту |\n| 500 | Внутренняя ошибка | Ошибка сервера — повторите запрос позже |\n\nТело ошибки всегда содержит поля `success: false` и `error` с человекочитаемым описанием.\n\n---\n\n## Поддержка\n\nПо вопросам интеграции и техническим вопросам: **support@uchecker.net**\n    "
+  description: '## О сервисе
+
+
+    UChecker — платформа валидации email-адресов для маркетологов, ESP-провайдеров и разработчиков.'
   version: 1.0.0
   contact: {}
 servers:
 - url: https://api.uchecker.net
   description: Production
 tags:
-- name: Валидация Email
+- name: Email
   description: Проверка email-адресов, управление задачами валидации, получение и скачивание результатов
 paths:
   /api/v1/validate/single:
@@ -65,7 +68,7 @@ paths:
       - api-key: []
       summary: Проверить один email-адрес
       tags:
-      - Валидация Email
+      - Email
   /api/v1/validate/bulk:
     post:
       description: 'Отправляет массив email-адресов на пакетную валидацию. Оптимальный способ проверки больших списков через API.
@@ -126,7 +129,7 @@ paths:
       - api-key: []
       summary: Массовая проверка email-адресов
       tags:
-      - Валидация Email
+      - Email
   /api/v1/tasks/{taskId}:
     get:
       description: 'Возвращает текущее состояние задачи валидации, включая прогресс обработки в процентах.
@@ -185,7 +188,7 @@ paths:
       - api-key: []
       summary: Получить статус и прогресс задачи
       tags:
-      - Валидация Email
+      - Email
   /api/v1/tasks/{taskId}/results:
     get:
       description: 'Возвращает результаты проверки email для завершённой задачи в формате JSON или CSV.
@@ -245,7 +248,7 @@ paths:
       - api-key: []
       summary: Получить результаты валидации
       tags:
-      - Валидация Email
+      - Email
   /api/v1/tasks/{taskId}/results/csv:
     get:
       description: 'Возвращает результаты валидации как скачиваемый CSV-файл. Браузер и HTTP-клиенты автоматически предложат сохранить файл.
@@ -304,7 +307,7 @@ paths:
       - api-key: []
       summary: Скачать результаты в формате CSV
       tags:
-      - Валидация Email
+      - Email
   /api/v1/tasks/{taskId}/download:
     get:
       description: 'Возвращает результаты валидации в виде ZIP-архива с двумя текстовыми файлами, готовыми для загрузки в ESP или CRM.
@@ -347,7 +350,7 @@ paths:
       - bearer: []
       summary: Скачать результаты в ZIP-архиве
       tags:
-      - Валидация Email
+      - Email
   /api/v1/tasks/{taskId}/analytics:
     get:
       description: 'Возвращает агрегированную статистику по задаче валидации: счётчики результатов, доставляемость и разбивку невалидных адресов по категориям причин.
@@ -395,7 +398,7 @@ paths:
       - api-key: []
       summary: Получить аналитику по задаче
       tags:
-      - Валидация Email
+      - Email
   /api/v1/tasks:
     get:
       description: 'Возвращает постраничный список всех задач валидации для текущего аккаунта. Задачи отсортированы по дате создания — новые первыми.
@@ -442,7 +445,7 @@ paths:
       - api-key: []
       summary: Получить список всех задач
       tags:
-      - Валидация Email
+      - Email
   /api/v1/account/balance:
     get:
       description: 'Возвращает текущий баланс кредитов, маскированный API ключ и идентификатор аккаунта.
@@ -474,7 +477,7 @@ paths:
       - api-key: []
       summary: Проверить баланс и информацию об аккаунте
       tags:
-      - Валидация Email
+      - Email
   /api/v1/account/stats:
     get:
       description: 'Возвращает сводную статистику по аккаунту: количество задач, суммарное число проверенных адресов, среднюю доставляемость и разбивку по последней завершённой задаче.
@@ -512,9 +515,137 @@ paths:
       - api-key: []
       summary: Получить статистику аккаунта
       tags:
-      - Валидация Email
+      - Email
 components:
   schemas:
+    TaskAnalyticsResponse:
+      type: object
+      properties:
+        total:
+          type: number
+          example: 100
+          description: Общее количество email-адресов в задаче
+        good:
+          type: number
+          example: 80
+          description: Количество валидных адресов (good)
+        bad:
+          type: number
+          example: 15
+          description: Количество невалидных адресов (bad)
+        unknown:
+          type: number
+          example: 5
+          description: Количество адресов с неопределённым результатом (unknown)
+        deliverability:
+          type: number
+          example: 80
+          description: Доставляемость (good / total * 100). Целое число 0–100.
+        reasons:
+          description: Разбивка невалидных адресов по категориям причин. Отсортирована по убыванию количества.
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskAnalyticsReason'
+      required:
+      - total
+      - good
+      - bad
+      - unknown
+      - deliverability
+      - reasons
+    TaskListItem:
+      type: object
+      properties:
+        task_id:
+          type: number
+          example: 123
+          description: Идентификатор задачи
+        fileName:
+          type: string
+          example: bulk_100_emails
+          description: Имя файла или автоматически сгенерированное название задачи
+        status:
+          type: string
+          example: completed
+          enum:
+          - pending
+          - processing
+          - completed
+          - failed
+          description: Текущее состояние задачи
+        created_at:
+          format: date-time
+          type: string
+          example: '2024-01-01T12:00:00.000Z'
+          description: Дата и время создания задачи. Формат ISO 8601.
+        finished_at:
+          format: date-time
+          type:
+          - string
+          - 'null'
+          example: '2024-01-01T12:01:35.000Z'
+          description: Дата и время завершения задачи. `null` для незавершённых задач. Формат ISO 8601.
+      required:
+      - task_id
+      - fileName
+      - status
+      - created_at
+      - finished_at
+    ValidationResultItem:
+      type: object
+      properties:
+        email:
+          type: string
+          example: user@example.com
+          description: Проверяемый email-адрес
+        validation_result:
+          type: string
+          example: good
+          enum:
+          - good
+          - bad
+          description: 'Итоговый результат валидации: `good` — почтовый ящик существует, `bad` — не существует или недоступен'
+        result:
+          type: string
+          example: mailbox_not_found
+          description: 'Детальная причина для невалидных адресов: `mailbox_not_found`, `domain_not_found`, `smtp_rejected` и др. Для `good` адресов — не заполняется.'
+      required:
+      - email
+      - validation_result
+    ForbiddenResponse:
+      type: object
+      properties:
+        statusCode:
+          type: number
+          example: 403
+          description: HTTP-код ошибки
+        message:
+          type: string
+          example: Недостаточно лимитов
+          description: На балансе недостаточно кредитов для выполнения операции. Пополните баланс в личном кабинете.
+      required:
+      - statusCode
+      - message
+    TaskResultsJsonResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+          description: Признак успешного выполнения запроса
+        format:
+          type: string
+          example: json
+          description: Формат данных в ответе
+        data:
+          description: Массив результатов валидации. Каждый элемент содержит email, результат и причину (для невалидных).
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationResultItem'
+      required:
+      - success
+      - format
+      - data
     TaskStatusResponse:
       type: object
       properties:
@@ -568,209 +699,44 @@ components:
       - progress_percent
       - created_at
       - finished_at
-    TaskResultsJsonResponse:
+    ErrorResponse:
       type: object
       properties:
         success:
           type: boolean
-          example: true
-          description: Признак успешного выполнения запроса
-        format:
+          example: false
+          description: Всегда `false` для ошибок
+        error:
           type: string
-          example: json
-          description: Формат данных в ответе
-        data:
-          description: Массив результатов валидации. Каждый элемент содержит email, результат и причину (для невалидных).
-          type: array
-          items:
-            $ref: '#/components/schemas/ValidationResultItem'
+          example: Сообщение об ошибке
+          description: Человекочитаемое описание ошибки на русском языке
       required:
       - success
-      - format
-      - data
-    TaskListItem:
-      type: object
-      properties:
-        task_id:
-          type: number
-          example: 123
-          description: Идентификатор задачи
-        fileName:
-          type: string
-          example: bulk_100_emails
-          description: Имя файла или автоматически сгенерированное название задачи
-        status:
-          type: string
-          example: completed
-          enum:
-          - pending
-          - processing
-          - completed
-          - failed
-          description: Текущее состояние задачи
-        created_at:
-          format: date-time
-          type: string
-          example: '2024-01-01T12:00:00.000Z'
-          description: Дата и время создания задачи. Формат ISO 8601.
-        finished_at:
-          format: date-time
-          type:
-          - string
-          - 'null'
-          example: '2024-01-01T12:01:35.000Z'
-          description: Дата и время завершения задачи. `null` для незавершённых задач. Формат ISO 8601.
-      required:
-      - task_id
-      - fileName
-      - status
-      - created_at
-      - finished_at
-    TaskAnalyticsResponse:
+      - error
+    AccountStatsLastList:
       type: object
       properties:
         total:
           type: number
           example: 100
-          description: Общее количество email-адресов в задаче
+          description: Общее количество email-адресов в последней завершённой задаче
         good:
           type: number
           example: 80
-          description: Количество валидных адресов (good)
+          description: Количество валидных адресов (good) в последней задаче
         bad:
           type: number
           example: 15
-          description: Количество невалидных адресов (bad)
+          description: Количество невалидных адресов (bad) в последней задаче
         unknown:
           type: number
           example: 5
-          description: Количество адресов с неопределённым результатом (unknown)
-        deliverability:
-          type: number
-          example: 80
-          description: Доставляемость (good / total * 100). Целое число 0–100.
-        reasons:
-          description: Разбивка невалидных адресов по категориям причин. Отсортирована по убыванию количества.
-          type: array
-          items:
-            $ref: '#/components/schemas/TaskAnalyticsReason'
+          description: Количество адресов с неопределённым результатом (unknown) в последней задаче
       required:
       - total
       - good
       - bad
       - unknown
-      - deliverability
-      - reasons
-    SingleValidationQueuedResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-          description: Признак успешного выполнения запроса
-        task_id:
-          type: number
-          example: 123
-          description: Уникальный идентификатор задачи. Используйте для получения результатов через `GET /api/v1/tasks/:taskId`.
-        email:
-          type: string
-          example: user@example.com
-          description: Email-адрес, отправленный на проверку
-        status:
-          type: string
-          example: queued
-          description: Текущий статус email. Значение `queued` означает, что адрес принят в обработку.
-        credits_used:
-          type: number
-          example: 1
-          description: Количество кредитов, списанных за этот запрос
-        credits_remaining:
-          type: number
-          example: 999
-          description: Остаток кредитов на балансе после списания
-        estimated_completion:
-          type: string
-          example: '2024-01-01T12:00:30.000Z'
-          description: Ориентировочное время завершения проверки. Формат ISO 8601.
-      required:
-      - success
-      - task_id
-      - email
-      - status
-      - credits_used
-      - credits_remaining
-      - estimated_completion
-    AccountStatsResponse:
-      type: object
-      properties:
-        tasks_count:
-          type: number
-          example: 42
-          description: Общее количество задач на аккаунте
-        emails_checked:
-          type: number
-          example: 12500
-          description: Общее количество проверенных email-адресов по всем задачам аккаунта
-        avg_deliverability:
-          type: number
-          example: 78
-          description: Средняя доставляемость (good / total * 100) по завершённым задачам. Целое число 0–100.
-        last_list:
-          description: Разбивка по последней завершённой задаче. `null`, если завершённых задач нет.
-          allOf:
-          - $ref: '#/components/schemas/AccountStatsLastList'
-      required:
-      - tasks_count
-      - emails_checked
-      - avg_deliverability
-      - last_list
-    ForbiddenResponse:
-      type: object
-      properties:
-        statusCode:
-          type: number
-          example: 403
-          description: HTTP-код ошибки
-        message:
-          type: string
-          example: Недостаточно лимитов
-          description: На балансе недостаточно кредитов для выполнения операции. Пополните баланс в личном кабинете.
-      required:
-      - statusCode
-      - message
-    SingleValidationDto:
-      type: object
-      properties:
-        email:
-          type: string
-          description: Email-адрес для проверки. Должен соответствовать стандартному формату RFC 5322 (например, `user@domain.com`).
-          example: user@example.com
-        client_type:
-          type: string
-          description: Тип клиента. `web` — запрос из веб-интерфейса, `api` — программный вызов. Влияет на формат внутренних уведомлений.
-          enum:
-          - web
-          - api
-        webhook_url:
-          type: string
-          description: URL для webhook-уведомления о завершении проверки. На указанный URL будет отправлен POST-запрос с результатами. URL должен быть доступен извне и возвращать HTTP 200.
-          example: https://your-site.com/webhook/validation-complete
-      required:
-      - email
-    UnauthorizedResponse:
-      type: object
-      properties:
-        statusCode:
-          type: number
-          example: 401
-          description: HTTP-код ошибки
-        message:
-          type: string
-          example: Не авторизован
-          description: API ключ или JWT токен отсутствует, невалиден или просрочен. Проверьте заголовки `x-api-key` или `Authorization`.
-      required:
-      - statusCode
-      - message
     InvalidEmailDetail:
       type: object
       properties:
@@ -785,94 +751,6 @@ components:
       required:
       - email
       - reason
-    TasksListResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-          description: Признак успешного выполнения запроса
-        tasks:
-          description: Массив задач. Отсортирован по дате создания — новые первыми.
-          type: array
-          items:
-            $ref: '#/components/schemas/TaskListItem'
-        total:
-          type: number
-          example: 50
-          description: Общее количество задач на аккаунте (для расчёта пагинации)
-        page:
-          type: number
-          example: 1
-          description: Текущая страница
-        limit:
-          type: number
-          example: 10
-          description: Количество задач на странице
-      required:
-      - success
-      - tasks
-      - total
-      - page
-      - limit
-    BulkValidationResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-          description: Признак успешного создания задачи
-        task_id:
-          type: number
-          example: 124
-          description: Уникальный идентификатор задачи для отслеживания прогресса и получения результатов
-        status:
-          type: string
-          example: queued
-          description: Статус задачи. `queued` — задача принята и ожидает обработки.
-        total_emails:
-          type: number
-          example: 100
-          description: Общее количество email-адресов, переданных в запросе
-        valid_emails:
-          type: number
-          example: 95
-          description: Количество email с валидным синтаксисом, принятых в очередь на проверку
-        invalid_emails:
-          type: number
-          example: 5
-          description: Количество email с невалидным синтаксисом, исключённых из проверки (кредиты не списаны)
-        invalid_details:
-          description: 'Детали по каждому отклонённому email: адрес и причина. Возвращается только при наличии невалидных адресов.'
-          type: array
-          items:
-            $ref: '#/components/schemas/InvalidEmailDetail'
-        credits_used:
-          type: number
-          example: 95
-          description: Количество списанных кредитов. Равно `valid_emails`.
-        credits_remaining:
-          type: number
-          example: 905
-          description: Остаток кредитов на балансе после списания
-        estimated_completion:
-          type: string
-          example: '2024-01-01T12:01:35.000Z'
-          description: Ориентировочное время завершения всей задачи. Формат ISO 8601.
-        note:
-          type: string
-          example: 5 невалидных адресов были пропущены
-          description: Информационное сообщение о пропущенных адресах (если есть)
-      required:
-      - success
-      - task_id
-      - status
-      - total_emails
-      - valid_emails
-      - invalid_emails
-      - credits_used
-      - credits_remaining
-      - estimated_completion
     AccountBalanceResponse:
       type: object
       properties:
@@ -942,65 +820,190 @@ components:
       required:
       - key
       - count
-    AccountStatsLastList:
-      type: object
-      properties:
-        total:
-          type: number
-          example: 100
-          description: Общее количество email-адресов в последней завершённой задаче
-        good:
-          type: number
-          example: 80
-          description: Количество валидных адресов (good) в последней задаче
-        bad:
-          type: number
-          example: 15
-          description: Количество невалидных адресов (bad) в последней задаче
-        unknown:
-          type: number
-          example: 5
-          description: Количество адресов с неопределённым результатом (unknown) в последней задаче
-      required:
-      - total
-      - good
-      - bad
-      - unknown
-    ValidationResultItem:
+    SingleValidationDto:
       type: object
       properties:
         email:
           type: string
+          description: Email-адрес для проверки. Должен соответствовать стандартному формату RFC 5322 (например, `user@domain.com`).
           example: user@example.com
-          description: Проверяемый email-адрес
-        validation_result:
+        client_type:
           type: string
-          example: good
+          description: Тип клиента. `web` — запрос из веб-интерфейса, `api` — программный вызов. Влияет на формат внутренних уведомлений.
           enum:
-          - good
-          - bad
-          description: 'Итоговый результат валидации: `good` — почтовый ящик существует, `bad` — не существует или недоступен'
-        result:
+          - web
+          - api
+        webhook_url:
           type: string
-          example: mailbox_not_found
-          description: 'Детальная причина для невалидных адресов: `mailbox_not_found`, `domain_not_found`, `smtp_rejected` и др. Для `good` адресов — не заполняется.'
+          description: URL для webhook-уведомления о завершении проверки. На указанный URL будет отправлен POST-запрос с результатами. URL должен быть доступен извне и возвращать HTTP 200.
+          example: https://your-site.com/webhook/validation-complete
       required:
       - email
-      - validation_result
-    ErrorResponse:
+    UnauthorizedResponse:
+      type: object
+      properties:
+        statusCode:
+          type: number
+          example: 401
+          description: HTTP-код ошибки
+        message:
+          type: string
+          example: Не авторизован
+          description: API ключ или JWT токен отсутствует, невалиден или просрочен. Проверьте заголовки `x-api-key` или `Authorization`.
+      required:
+      - statusCode
+      - message
+    SingleValidationQueuedResponse:
       type: object
       properties:
         success:
           type: boolean
-          example: false
-          description: Всегда `false` для ошибок
-        error:
+          example: true
+          description: Признак успешного выполнения запроса
+        task_id:
+          type: number
+          example: 123
+          description: Уникальный идентификатор задачи. Используйте для получения результатов через `GET /api/v1/tasks/:taskId`.
+        email:
           type: string
-          example: Сообщение об ошибке
-          description: Человекочитаемое описание ошибки на русском языке
+          example: user@example.com
+          description: Email-адрес, отправленный на проверку
+        status:
+          type: string
+          example: queued
+          description: Текущий статус email. Значение `queued` означает, что адрес принят в обработку.
+        credits_used:
+          type: number
+          example: 1
+          description: Количество кредитов, списанных за этот запрос
+        credits_remaining:
+          type: number
+          example: 999
+          description: Остаток кредитов на балансе после списания
+        estimated_completion:
+          type: string
+          example: '2024-01-01T12:00:30.000Z'
+          description: Ориентировочное время завершения проверки. Формат ISO 8601.
       required:
       - success
-      - error
+      - task_id
+      - email
+      - status
+      - credits_used
+      - credits_remaining
+      - estimated_completion
+    TasksListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+          description: Признак успешного выполнения запроса
+        tasks:
+          description: Массив задач. Отсортирован по дате создания — новые первыми.
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskListItem'
+        total:
+          type: number
+          example: 50
+          description: Общее количество задач на аккаунте (для расчёта пагинации)
+        page:
+          type: number
+          example: 1
+          description: Текущая страница
+        limit:
+          type: number
+          example: 10
+          description: Количество задач на странице
+      required:
+      - success
+      - tasks
+      - total
+      - page
+      - limit
+    AccountStatsResponse:
+      type: object
+      properties:
+        tasks_count:
+          type: number
+          example: 42
+          description: Общее количество задач на аккаунте
+        emails_checked:
+          type: number
+          example: 12500
+          description: Общее количество проверенных email-адресов по всем задачам аккаунта
+        avg_deliverability:
+          type: number
+          example: 78
+          description: Средняя доставляемость (good / total * 100) по завершённым задачам. Целое число 0–100.
+        last_list:
+          description: Разбивка по последней завершённой задаче. `null`, если завершённых задач нет.
+          allOf:
+          - $ref: '#/components/schemas/AccountStatsLastList'
+      required:
+      - tasks_count
+      - emails_checked
+      - avg_deliverability
+      - last_list
+    BulkValidationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+          description: Признак успешного создания задачи
+        task_id:
+          type: number
+          example: 124
+          description: Уникальный идентификатор задачи для отслеживания прогресса и получения результатов
+        status:
+          type: string
+          example: queued
+          description: Статус задачи. `queued` — задача принята и ожидает обработки.
+        total_emails:
+          type: number
+          example: 100
+          description: Общее количество email-адресов, переданных в запросе
+        valid_emails:
+          type: number
+          example: 95
+          description: Количество email с валидным синтаксисом, принятых в очередь на проверку
+        invalid_emails:
+          type: number
+          example: 5
+          description: Количество email с невалидным синтаксисом, исключённых из проверки (кредиты не списаны)
+        invalid_details:
+          description: 'Детали по каждому отклонённому email: адрес и причина. Возвращается только при наличии невалидных адресов.'
+          type: array
+          items:
+            $ref: '#/components/schemas/InvalidEmailDetail'
+        credits_used:
+          type: number
+          example: 95
+          description: Количество списанных кредитов. Равно `valid_emails`.
+        credits_remaining:
+          type: number
+          example: 905
+          description: Остаток кредитов на балансе после списания
+        estimated_completion:
+          type: string
+          example: '2024-01-01T12:01:35.000Z'
+          description: Ориентировочное время завершения всей задачи. Формат ISO 8601.
+        note:
+          type: string
+          example: 5 невалидных адресов были пропущены
+          description: Информационное сообщение о пропущенных адресах (если есть)
+      required:
+      - success
+      - task_id
+      - status
+      - total_emails
+      - valid_emails
+      - invalid_emails
+      - credits_used
+      - credits_remaining
+      - estimated_completion
   securitySchemes:
     api-key:
       type: apiKey
