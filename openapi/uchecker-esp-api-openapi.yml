@@ -126,6 +126,39 @@ paths:
       - ESP Провайдеры
 components:
   schemas:
+    ProvisionAccountDto:
+      type: object
+      properties:
+        email:
+          type: string
+          description: Email-адрес пользователя. Если аккаунт с таким email существует — кредиты будут добавлены к текущему балансу. Если нет — будет создан новый аккаунт.
+          example: user@example.com
+        credits:
+          type: number
+          description: Количество кредитов для зачисления на аккаунт. 1 кредит = 1 проверка email-адреса.
+          example: 10000
+          minimum: 1
+        external_id:
+          type: string
+          description: Внешний идентификатор заказа/транзакции на стороне ESP-провайдера. Используется для идемпотентности — повторный запрос с тем же `external_id` не создаст дубликат.
+          example: order_12345
+      required:
+      - email
+      - credits
+    EspErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+          description: Всегда `false` для ошибок
+        error:
+          type: string
+          example: Неверный токен провайдера
+          description: Описание ошибки
+      required:
+      - success
+      - error
     ProvisionResponse:
       type: object
       properties:
@@ -174,25 +207,6 @@ components:
       - credits_added
       - total_credits
       - is_new_account
-    ProvisionAccountDto:
-      type: object
-      properties:
-        email:
-          type: string
-          description: Email-адрес пользователя. Если аккаунт с таким email существует — кредиты будут добавлены к текущему балансу. Если нет — будет создан новый аккаунт.
-          example: user@example.com
-        credits:
-          type: number
-          description: Количество кредитов для зачисления на аккаунт. 1 кредит = 1 проверка email-адреса.
-          example: 10000
-          minimum: 1
-        external_id:
-          type: string
-          description: Внешний идентификатор заказа/транзакции на стороне ESP-провайдера. Используется для идемпотентности — повторный запрос с тем же `external_id` не создаст дубликат.
-          example: order_12345
-      required:
-      - email
-      - credits
     PriceResponse:
       type: object
       properties:
@@ -222,20 +236,6 @@ components:
       - price
       - price_per_email
       - currency
-    EspErrorResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: false
-          description: Всегда `false` для ошибок
-        error:
-          type: string
-          example: Неверный токен провайдера
-          description: Описание ошибки
-      required:
-      - success
-      - error
   securitySchemes:
     api-key:
       type: apiKey
