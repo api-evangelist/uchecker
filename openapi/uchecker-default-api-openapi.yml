@@ -737,29 +737,6 @@ paths:
       - Аутентификация
 components:
   schemas:
-    InitiateLinkDto:
-      type: object
-      properties:
-        telegram_code:
-          type: number
-          example: 123456
-          description: 6-значный числовой код, полученный от Telegram-бота UChecker командой `/link`
-      required:
-      - telegram_code
-    UnauthorizedResponse:
-      type: object
-      properties:
-        statusCode:
-          type: number
-          example: 401
-          description: HTTP-код ошибки
-        message:
-          type: string
-          example: Не авторизован
-          description: API ключ или JWT токен отсутствует, невалиден или просрочен. Проверьте заголовки `x-api-key` или `Authorization`.
-      required:
-      - statusCode
-      - message
     RefreshTokenResponse:
       type: object
       properties:
@@ -774,56 +751,20 @@ components:
       required:
       - access_token
       - refresh_token
-    ResetApiKeyResponse:
+    UnauthorizedResponse:
       type: object
       properties:
+        statusCode:
+          type: number
+          example: 401
+          description: HTTP-код ошибки
         message:
           type: string
-          example: API ключ успешно сброшен
-          description: Подтверждение операции
-        api_key:
-          type: string
-          example: uk_new_xxxxxxxxxxxxx
-          description: Новый API ключ. Сохраните его — в дальнейшем он отображается только в маскированном виде.
+          example: Не авторизован
+          description: API ключ или JWT токен отсутствует, невалиден или просрочен. Проверьте заголовки `x-api-key` или `Authorization`.
       required:
+      - statusCode
       - message
-      - api_key
-    UserInfo:
-      type: object
-      properties:
-        id:
-          type: number
-          example: 1
-          description: Числовой идентификатор аккаунта
-        email:
-          type: string
-          example: user@example.com
-          description: Email-адрес аккаунта
-        telegram_code:
-          type: number
-          example: 123456
-          description: 6-значный код для привязки Telegram-аккаунта. Присутствует, если аккаунт поддерживает Telegram-интеграцию.
-      required:
-      - id
-      - email
-    RegisterWithCodeDto:
-      type: object
-      properties:
-        email:
-          type: string
-          example: user@example.com
-          description: Email-адрес для нового веб-аккаунта. Должен быть уникальным.
-        password:
-          type: string
-          example: password123
-          description: Пароль для нового аккаунта. Минимум 6 символов.
-        telegram_code:
-          type: number
-          example: 123456
-          description: 6-значный код из Telegram-бота для привязки существующего бот-аккаунта к новому веб-аккаунту. Если не указан — создаётся обычный аккаунт без привязки к Telegram.
-      required:
-      - email
-      - password
     ConfirmLinkDto:
       type: object
       properties:
@@ -843,20 +784,15 @@ components:
       - request_id
       - chat_id
       - confirmed
-    ResetPasswordDto:
+    InitiateLinkDto:
       type: object
       properties:
-        token:
-          type: string
-          example: a1b2c3...
-          description: Одноразовый токен из ссылки в письме. Действует 60 минут.
-        password:
-          type: string
-          example: newpassword123
-          description: Новый пароль. Минимум 6 символов.
+        telegram_code:
+          type: number
+          example: 123456
+          description: 6-значный числовой код, полученный от Telegram-бота UChecker командой `/link`
       required:
-      - token
-      - password
+      - telegram_code
     LoginDto:
       type: object
       properties:
@@ -879,6 +815,79 @@ components:
           example: user@example.com
           description: Email-адрес аккаунта. Если email зарегистрирован, на него будет отправлена ссылка для сброса пароля.
       required:
+      - email
+    RegisterWithCodeDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: user@example.com
+          description: Email-адрес для нового веб-аккаунта. Должен быть уникальным.
+        password:
+          type: string
+          example: password123
+          description: Пароль для нового аккаунта. Минимум 6 символов.
+        telegram_code:
+          type: number
+          example: 123456
+          description: 6-значный код из Telegram-бота для привязки существующего бот-аккаунта к новому веб-аккаунту. Если не указан — создаётся обычный аккаунт без привязки к Telegram.
+      required:
+      - email
+      - password
+    ResetPasswordDto:
+      type: object
+      properties:
+        token:
+          type: string
+          example: a1b2c3...
+          description: Одноразовый токен из ссылки в письме. Действует 60 минут.
+        password:
+          type: string
+          example: newpassword123
+          description: Новый пароль. Минимум 6 символов.
+      required:
+      - token
+      - password
+    ResetApiKeyResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: API ключ успешно сброшен
+          description: Подтверждение операции
+        api_key:
+          type: string
+          example: uk_new_xxxxxxxxxxxxx
+          description: Новый API ключ. Сохраните его — в дальнейшем он отображается только в маскированном виде.
+      required:
+      - message
+      - api_key
+    RefreshTokenDto:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          description: Действующий refresh token, полученный при входе или предыдущем обновлении. Каждый refresh token можно использовать только один раз.
+          example: eyJhbGciOiJIUzI1NiIs...
+      required:
+      - refresh_token
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+          description: Числовой идентификатор аккаунта
+        email:
+          type: string
+          example: user@example.com
+          description: Email-адрес аккаунта
+        telegram_code:
+          type: number
+          example: 123456
+          description: 6-значный код для привязки Telegram-аккаунта. Присутствует, если аккаунт поддерживает Telegram-интеграцию.
+      required:
+      - id
       - email
     LoginResponse:
       type: object
@@ -904,54 +913,6 @@ components:
       - api_key
       - access_token
       - refresh_token
-    RefreshTokenDto:
-      type: object
-      properties:
-        refresh_token:
-          type: string
-          description: Действующий refresh token, полученный при входе или предыдущем обновлении. Каждый refresh token можно использовать только один раз.
-          example: eyJhbGciOiJIUzI1NiIs...
-      required:
-      - refresh_token
-    PaymentHistoryResponse:
-      type: object
-      properties:
-        data:
-          description: Массив транзакций. Отсортирован по дате — новые первыми.
-          type: array
-          items:
-            $ref: '#/components/schemas/PaymentHistoryItem'
-        pagination:
-          description: Метаданные пагинации
-          allOf:
-          - $ref: '#/components/schemas/PaginationInfo'
-      required:
-      - data
-      - pagination
-    PaginationInfo:
-      type: object
-      properties:
-        page:
-          type: number
-          example: 1
-          description: Текущая страница
-        limit:
-          type: number
-          example: 10
-          description: Количество записей на странице
-        total:
-          type: number
-          example: 5
-          description: Общее количество записей
-        totalPages:
-          type: number
-          example: 1
-          description: Общее количество страниц. Рассчитывается как `Math.ceil(total / limit)`.
-      required:
-      - page
-      - limit
-      - total
-      - totalPages
     PaymentHistoryItem:
       type: object
       properties:
@@ -992,6 +953,45 @@ components:
       - product_details
       - creation_date
       - payment_id
+    PaginationInfo:
+      type: object
+      properties:
+        page:
+          type: number
+          example: 1
+          description: Текущая страница
+        limit:
+          type: number
+          example: 10
+          description: Количество записей на странице
+        total:
+          type: number
+          example: 5
+          description: Общее количество записей
+        totalPages:
+          type: number
+          example: 1
+          description: Общее количество страниц. Рассчитывается как `Math.ceil(total / limit)`.
+      required:
+      - page
+      - limit
+      - total
+      - totalPages
+    PaymentHistoryResponse:
+      type: object
+      properties:
+        data:
+          description: Массив транзакций. Отсортирован по дате — новые первыми.
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentHistoryItem'
+        pagination:
+          description: Метаданные пагинации
+          allOf:
+          - $ref: '#/components/schemas/PaginationInfo'
+      required:
+      - data
+      - pagination
     TrackClickDto:
       type: object
       properties:
@@ -1018,20 +1018,21 @@ components:
           description: Путь посадочной страницы
         referer:
           type: string
-    SetReferralAccessDto:
+    UpdateRateDto:
       type: object
       properties:
         partner_pk:
           type: number
           example: 42
-          description: account_pk партнёра
-        enabled:
-          type: boolean
-          example: true
-          description: Показывать ли аккаунту партнёрский раздел. По умолчанию выключено у всех.
+        rate:
+          type: number
+          example: 0.25
+          minimum: 0
+          maximum: 1
+          description: 'Ставка долей единицы: 0.25 — это 25%. Верхняя граница обязательна, иначе значение не влезет в NUMERIC(5,4).'
       required:
       - partner_pk
-      - enabled
+      - rate
     CreatePayoutDto:
       type: object
       properties:
@@ -1054,21 +1055,20 @@ components:
       - partner_pk
       - amount
       - external_id
-    UpdateRateDto:
+    SetReferralAccessDto:
       type: object
       properties:
         partner_pk:
           type: number
           example: 42
-        rate:
-          type: number
-          example: 0.25
-          minimum: 0
-          maximum: 1
-          description: 'Ставка долей единицы: 0.25 — это 25%. Верхняя граница обязательна, иначе значение не влезет в NUMERIC(5,4).'
+          description: account_pk партнёра
+        enabled:
+          type: boolean
+          example: true
+          description: Показывать ли аккаунту партнёрский раздел. По умолчанию выключено у всех.
       required:
       - partner_pk
-      - rate
+      - enabled
   securitySchemes:
     api-key:
       type: apiKey
