@@ -737,20 +737,29 @@ paths:
       - Аутентификация
 components:
   schemas:
-    RefreshTokenResponse:
+    ForgotPasswordDto:
       type: object
       properties:
-        access_token:
+        email:
           type: string
-          example: eyJhbGciOiJIUzI1NiIs...
-          description: 'Новый JWT access token. Время жизни: 1 час.'
-        refresh_token:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIs...
-          description: 'Новый JWT refresh token. Время жизни: 7 дней. Предыдущий refresh token аннулирован.'
+          example: user@example.com
+          description: Email-адрес аккаунта. Если email зарегистрирован, на него будет отправлена ссылка для сброса пароля.
       required:
-      - access_token
-      - refresh_token
+      - email
+    LoginDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: user@example.com
+          description: Email-адрес, указанный при регистрации
+        password:
+          type: string
+          example: password123
+          description: Пароль аккаунта
+      required:
+      - email
+      - password
     UnauthorizedResponse:
       type: object
       properties:
@@ -765,6 +774,47 @@ components:
       required:
       - statusCode
       - message
+    RefreshTokenDto:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          description: Действующий refresh token, полученный при входе или предыдущем обновлении. Каждый refresh token можно использовать только один раз.
+          example: eyJhbGciOiJIUzI1NiIs...
+      required:
+      - refresh_token
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+          description: Числовой идентификатор аккаунта
+        email:
+          type: string
+          example: user@example.com
+          description: Email-адрес аккаунта
+        telegram_code:
+          type: number
+          example: 123456
+          description: 6-значный код для привязки Telegram-аккаунта. Присутствует, если аккаунт поддерживает Telegram-интеграцию.
+      required:
+      - id
+      - email
+    RefreshTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIs...
+          description: 'Новый JWT access token. Время жизни: 1 час.'
+        refresh_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIs...
+          description: 'Новый JWT refresh token. Время жизни: 7 дней. Предыдущий refresh token аннулирован.'
+      required:
+      - access_token
+      - refresh_token
     ConfirmLinkDto:
       type: object
       properties:
@@ -784,38 +834,44 @@ components:
       - request_id
       - chat_id
       - confirmed
-    InitiateLinkDto:
+    ResetApiKeyResponse:
       type: object
       properties:
-        telegram_code:
-          type: number
-          example: 123456
-          description: 6-значный числовой код, полученный от Telegram-бота UChecker командой `/link`
+        message:
+          type: string
+          example: API ключ успешно сброшен
+          description: Подтверждение операции
+        api_key:
+          type: string
+          example: uk_new_xxxxxxxxxxxxx
+          description: Новый API ключ. Сохраните его — в дальнейшем он отображается только в маскированном виде.
       required:
-      - telegram_code
-    LoginDto:
+      - message
+      - api_key
+    LoginResponse:
       type: object
       properties:
-        email:
+        user:
+          description: Информация об аккаунте пользователя
+          allOf:
+          - $ref: '#/components/schemas/UserInfo'
+        api_key:
           type: string
-          example: user@example.com
-          description: Email-адрес, указанный при регистрации
-        password:
+          example: uk_xxxxxxxxxxxxx
+          description: Персональный API ключ. Используйте в заголовке `x-api-key` для аутентификации запросов. Не имеет срока действия.
+        access_token:
           type: string
-          example: password123
-          description: Пароль аккаунта
+          example: eyJhbGciOiJIUzI1NiIs...
+          description: 'JWT access token. Время жизни: 1 час. Передавайте в заголовке `Authorization: Bearer <token>`.'
+        refresh_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIs...
+          description: 'JWT refresh token. Время жизни: 7 дней. Используйте для обновления access token через `POST /auth/refresh`.'
       required:
-      - email
-      - password
-    ForgotPasswordDto:
-      type: object
-      properties:
-        email:
-          type: string
-          example: user@example.com
-          description: Email-адрес аккаунта. Если email зарегистрирован, на него будет отправлена ссылка для сброса пароля.
-      required:
-      - email
+      - user
+      - api_key
+      - access_token
+      - refresh_token
     RegisterWithCodeDto:
       type: object
       properties:
@@ -848,71 +904,39 @@ components:
       required:
       - token
       - password
-    ResetApiKeyResponse:
+    InitiateLinkDto:
       type: object
       properties:
-        message:
-          type: string
-          example: API ключ успешно сброшен
-          description: Подтверждение операции
-        api_key:
-          type: string
-          example: uk_new_xxxxxxxxxxxxx
-          description: Новый API ключ. Сохраните его — в дальнейшем он отображается только в маскированном виде.
-      required:
-      - message
-      - api_key
-    RefreshTokenDto:
-      type: object
-      properties:
-        refresh_token:
-          type: string
-          description: Действующий refresh token, полученный при входе или предыдущем обновлении. Каждый refresh token можно использовать только один раз.
-          example: eyJhbGciOiJIUzI1NiIs...
-      required:
-      - refresh_token
-    UserInfo:
-      type: object
-      properties:
-        id:
-          type: number
-          example: 1
-          description: Числовой идентификатор аккаунта
-        email:
-          type: string
-          example: user@example.com
-          description: Email-адрес аккаунта
         telegram_code:
           type: number
           example: 123456
-          description: 6-значный код для привязки Telegram-аккаунта. Присутствует, если аккаунт поддерживает Telegram-интеграцию.
+          description: 6-значный числовой код, полученный от Telegram-бота UChecker командой `/link`
       required:
-      - id
-      - email
-    LoginResponse:
+      - telegram_code
+    PaginationInfo:
       type: object
       properties:
-        user:
-          description: Информация об аккаунте пользователя
-          allOf:
-          - $ref: '#/components/schemas/UserInfo'
-        api_key:
-          type: string
-          example: uk_xxxxxxxxxxxxx
-          description: Персональный API ключ. Используйте в заголовке `x-api-key` для аутентификации запросов. Не имеет срока действия.
-        access_token:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIs...
-          description: 'JWT access token. Время жизни: 1 час. Передавайте в заголовке `Authorization: Bearer <token>`.'
-        refresh_token:
-          type: string
-          example: eyJhbGciOiJIUzI1NiIs...
-          description: 'JWT refresh token. Время жизни: 7 дней. Используйте для обновления access token через `POST /auth/refresh`.'
+        page:
+          type: number
+          example: 1
+          description: Текущая страница
+        limit:
+          type: number
+          example: 10
+          description: Количество записей на странице
+        total:
+          type: number
+          example: 5
+          description: Общее количество записей
+        totalPages:
+          type: number
+          example: 1
+          description: Общее количество страниц. Рассчитывается как `Math.ceil(total / limit)`.
       required:
-      - user
-      - api_key
-      - access_token
-      - refresh_token
+      - page
+      - limit
+      - total
+      - totalPages
     PaymentHistoryItem:
       type: object
       properties:
@@ -953,30 +977,6 @@ components:
       - product_details
       - creation_date
       - payment_id
-    PaginationInfo:
-      type: object
-      properties:
-        page:
-          type: number
-          example: 1
-          description: Текущая страница
-        limit:
-          type: number
-          example: 10
-          description: Количество записей на странице
-        total:
-          type: number
-          example: 5
-          description: Общее количество записей
-        totalPages:
-          type: number
-          example: 1
-          description: Общее количество страниц. Рассчитывается как `Math.ceil(total / limit)`.
-      required:
-      - page
-      - limit
-      - total
-      - totalPages
     PaymentHistoryResponse:
       type: object
       properties:
